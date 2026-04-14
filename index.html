@@ -493,9 +493,15 @@ function planetBlock(planet,num,sys){
     editBtn.addEventListener('click',()=>{UI.editPlanet=planet.id;render();});
     body.appendChild(editBtn);
 
-    // Moons
+    // Moons — sorted by order field
+    const sortedMoons=[...moons].sort((a,b)=>{
+      if(!a.order&&!b.order) return 0;
+      if(!a.order) return 1;
+      if(!b.order) return -1;
+      return a.order-b.order;
+    });
     const moonSec=el('div',{class:'moon-section'},el('div',{class:'moon-section-title'},`Moons (${moons.length})`));
-    moons.forEach((m,i)=>moonSec.appendChild(moonRow(m,i+1,sys.id,planet.id)));
+    sortedMoons.forEach((m,i)=>moonSec.appendChild(moonRow(m,m.order||(i+1),sys.id,planet.id)));
 
     if(UI.addMoon===planet.id){
       moonSec.appendChild(bodyForm(null,'Add Moon',
@@ -570,7 +576,13 @@ function sysCard(sys){
   editSysBtn.addEventListener('click',()=>{UI.editSys=sys.id;render();});
   body.appendChild(editSysBtn);
 
-  sys.planets.forEach((p,i)=>body.appendChild(planetBlock(p,i+1,sys)));
+  const sortedPlanets=[...sys.planets].sort((a,b)=>{
+    if(!a.order&&!b.order) return 0;
+    if(!a.order) return 1;
+    if(!b.order) return -1;
+    return a.order-b.order;
+  });
+  sortedPlanets.forEach((p,i)=>body.appendChild(planetBlock(p,p.order||(i+1),sys)));
 
   if(UI.addPlanet===sys.id){
     body.appendChild(bodyForm(null,'Add Planet',
