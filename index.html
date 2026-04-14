@@ -639,6 +639,21 @@ function buildSysCard(sys) {
   return card;
 }
 
+// ─── Partial re-render for search (preserves input focus) ─────────
+function renderSystems() {
+  let container = document.getElementById('systems-list');
+  if (!container) { render(); return; }
+  container.innerHTML = '';
+  const filtered = state.systems.filter(s => s.name.toLowerCase().includes(ui.search.toLowerCase()));
+  if (filtered.length === 0) {
+    container.appendChild(h('div',{class:'empty'}, ui.search ? 'No matches.' : 'No systems logged yet.\nTap + to add your first.'));
+  }
+  filtered.forEach(s => container.appendChild(buildSysCard(s)));
+  // update datalist
+  const dl = document.getElementById('star-names');
+  if (dl) { dl.innerHTML = ''; state.systems.forEach(s => dl.appendChild(h('option',{value:s.name}))); }
+}
+
 // ─── Main render ──────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
@@ -655,22 +670,31 @@ function render() {
   ).length;
 
   // Header
+  const isLight = document.documentElement.classList.contains('light');
   frag.appendChild(h('div', {class:'header'},
     h('div',{}, h('div',{class:'header-title'},'SC2 Explorer'), h('div',{class:'header-sub'},'The Ur-Quan Masters')),
-    h('div',{class:'stats'},
-      ...[
-        [state.systems.length,'systems'],
-        [totalPlanets,'planets'],
-        [bioSysCount,'bio'],
-        [revisitCount,'revisit']
-      ].map(([n,l]) => h('div',{class:'stat'}, h('div',{class:'stat-n'},String(n)), h('div',{class:'stat-l'},l)))
+    h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
+      h('div',{class:'stats'},
+        ...[
+          [state.systems.length,'systems'],
+          [totalPlanets,'planets'],
+          [bioSysCount,'bio'],
+          [revisitCount,'revisit']
+        ].map(([n,l]) => h('div',{class:'stat'}, h('div',{class:'stat-n'},String(n)), h('div',{class:'stat-l'},l)))
+      ),
+      h('button',{class:'btn-theme', onclick: toggleTheme}, isLight ? '☀ Light' : '☾ Dark')
     )
   ));
 
-  // Search
+  // Autocomplete datalist
+  const datalist = h('datalist', {id:'star-names'});
+  state.systems.forEach(s => datalist.appendChild(h('option', {value: s.name})));
+  frag.appendChild(datalist);
+
+  // Search — give it an id so we can restore focus after render
   const searchRow = h('div',{class:'search-row'});
-  const si = h('input',{type:'text',placeholder:'Search star systems...', value:ui.search});
-  si.addEventListener('input', e => { ui.search = e.target.value; render(); });
+  const si = h('input',{type:'text', id:'search-input', placeholder:'Search star systems...', value:ui.search, list:'star-names', autocomplete:'off'});
+  si.addEventListener('input', e => { ui.search = e.target.value; renderSystems(); });
   searchRow.appendChild(si);
   frag.appendChild(searchRow);
 
@@ -679,12 +703,13 @@ function render() {
     frag.appendChild(buildSystemForm(null, addSystem, () => { ui.addingSys = false; render(); }));
   }
 
-  // Empty state
+  // Systems list in a stable container
+  const systemsList = h('div', {id:'systems-list'});
   if (filtered.length === 0 && !ui.addingSys) {
-    frag.appendChild(h('div',{class:'empty'}, state.systems.length === 0 ? 'No systems logged yet.\nTap + to add your first.' : 'No matches.'));
+    systemsList.appendChild(h('div',{class:'empty'}, state.systems.length === 0 ? 'No systems logged yet.\nTap + to add your first.' : 'No matches.'));
   }
-
-  filtered.forEach(s => frag.appendChild(buildSysCard(s)));
+  filtered.forEach(s => systemsList.appendChild(buildSysCard(s)));
+  frag.appendChild(systemsList);
 
   // Map toggle
   const mapToggle = h('div',{class:'map-toggle'},
@@ -733,6 +758,12 @@ function render() {
   }
 
   app.appendChild(frag);
+  // Restore search focus if it was active before render
+  if (document.activeElement?.id === 'search-input' || ui._searchWasFocused) {
+    const newSi = document.getElementById('search-input');
+    if (newSi) { newSi.focus(); newSi.setSelectionRange(ui._searchCursor||0, ui._searchCursor||0); }
+    ui._searchWasFocused = false;
+  }
   drawMap();
 }
 
@@ -781,6 +812,7 @@ function drawMap() {
 
 // ─── Boot ─────────────────────────────────────────────────────────
 load();
+initTheme();
 render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
