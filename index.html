@@ -6,815 +6,705 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SC2 Explorer">
-<meta name="theme-color" content="#1a1a1a">
 <link rel="manifest" href="manifest.json">
 <title>SC2 Explorer</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-:root {
-  --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
-  --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
-  --border: rgba(255,255,255,0.11); --border2: rgba(255,255,255,0.24);
-  --accent: #EF9F27; --teal: #5DCAA5;
-  --info-bg: #0c2a47; --info-text: #85b7eb;
-  --success-bg: #173404; --success-text: #97c459;
-  --warn-bg: #412402; --warn-text: #fac775;
-  --danger-bg: #2d1010; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.35);
-  --r: 10px; --rs: 6px;
+/* ── Dark theme (default) ── */
+:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;
+  --bdr:rgba(255,255,255,.11);--bdr2:rgba(255,255,255,.24);
+  --accent:#EF9F27;--teal:#5DCAA5;
+  --info-bg:#0c2a47;--info-tx:#85b7eb;
+  --ok-bg:#173404;--ok-tx:#97c459;
+  --warn-bg:#412402;--warn-tx:#fac775;
+  --bad-bg:#2d1010;--bad-tx:#f09595;--bad-bdr:rgba(240,149,149,.35);
+  --r:10px;--rs:6px;
 }
-html.light {
-  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
-  --text: #1a1a1a; --text2: #666660; --text3: #999993;
-  --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
-  --info-bg: #e6f1fb; --info-text: #0c447c;
-  --success-bg: #eaf3de; --success-text: #27500a;
-  --warn-bg: #faeeda; --warn-text: #633806;
-  --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
+/* ── Light theme ── */
+html.light{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#e8e8e4;
+  --text:#1a1a1a;--text2:#666660;--text3:#999993;
+  --bdr:rgba(0,0,0,.11);--bdr2:rgba(0,0,0,.22);
+  --info-bg:#e6f1fb;--info-tx:#0c447c;
+  --ok-bg:#eaf3de;--ok-tx:#27500a;
+  --warn-bg:#faeeda;--warn-tx:#633806;
+  --bad-bg:#fcebeb;--bad-tx:#a32d2d;--bad-bdr:rgba(163,45,45,.35);
 }
 
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; -webkit-tap-highlight-color: transparent; }
-body { padding-bottom: env(safe-area-inset-bottom); }
-#app { max-width: 700px; margin: 0 auto; padding: 16px 16px 100px; }
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;-webkit-tap-highlight-color:transparent}
+body{padding-bottom:env(safe-area-inset-bottom)}
+#app{max-width:700px;margin:0 auto;padding:16px 16px 100px}
 
-input, select, textarea {
-  font-size: 16px; padding: 10px 12px; width: 100%;
-  background: var(--bg); color: var(--text);
-  border: 0.5px solid var(--border2); border-radius: var(--rs);
-  outline: none; font-family: inherit; appearance: none; -webkit-appearance: none;
-  transition: border-color 0.15s;
-}
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-textarea { resize: vertical; line-height: 1.5; }
-input[type=number] { -moz-appearance: textfield; }
-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input,select,textarea{font-size:16px;padding:10px 12px;width:100%;background:var(--bg);color:var(--text);border:.5px solid var(--bdr2);border-radius:var(--rs);outline:none;font-family:inherit;appearance:none;-webkit-appearance:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;line-height:1.5}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
-button {
-  font-size: 14px; padding: 10px 16px; cursor: pointer;
-  background: var(--bg); color: var(--text);
-  border: 0.5px solid var(--border2); border-radius: var(--rs);
-  font-family: inherit; transition: background 0.1s, transform 0.08s;
-  white-space: nowrap;
-}
-button:active { background: var(--bg3); transform: scale(0.97); }
-.btn-primary { font-weight: 600; }
-.btn-danger { color: var(--danger-text); border-color: var(--danger-border); }
-.btn-sm { font-size: 13px; padding: 7px 13px; }
-.btn-full { width: 100%; margin-bottom: 8px; }
+button{font-size:14px;padding:10px 16px;cursor:pointer;background:var(--bg);color:var(--text);border:.5px solid var(--bdr2);border-radius:var(--rs);font-family:inherit;transition:background .1s,transform .08s;white-space:nowrap}
+button:active{background:var(--bg3);transform:scale(.97)}
 
-/* Header */
-.header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
-.header-title { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Fira Mono', monospace; letter-spacing: -0.5px; }
-.header-sub { font-size: 11px; color: var(--text3); font-family: monospace; }
-.stats { display: flex; gap: 14px; flex-shrink: 0; }
-.stat { text-align: center; }
-.stat-n { font-size: 18px; font-weight: 600; font-family: monospace; line-height: 1.1; }
-.stat-l { font-size: 10px; color: var(--text2); }
+.btn-primary{font-weight:600}
+.btn-danger{color:var(--bad-tx);border-color:var(--bad-bdr)}
+.btn-sm{font-size:13px;padding:7px 13px}
+.btn-full{width:100%;margin-bottom:8px}
+.btn-del{font-size:14px;padding:4px 9px;color:var(--bad-tx);border:none;background:transparent;border-radius:var(--rs);flex-shrink:0;min-width:32px;line-height:1}
+.btn-del:active{background:var(--bad-bg)}
+.btn-theme{font-size:13px;padding:5px 12px;border-radius:20px;border:.5px solid var(--bdr2);background:var(--bg2);color:var(--text2);cursor:pointer;flex-shrink:0}
 
-/* Search */
-.search-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.search-row input { flex: 1; }
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:8px}
+.header-left .title{font-size:20px;font-weight:700;font-family:'SF Mono','Fira Mono',monospace;letter-spacing:-.5px}
+.header-left .sub{font-size:11px;color:var(--text3);font-family:monospace}
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.stats{display:flex;gap:12px}
+.stat{text-align:center}
+.stat-n{font-size:17px;font-weight:600;font-family:monospace;line-height:1.1}
+.stat-l{font-size:10px;color:var(--text2)}
 
-/* System card */
-.sys-card { border: 0.5px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 8px; }
-.sys-card.open { border-color: var(--border2); }
-.sys-header { display: flex; align-items: center; gap: 8px; padding: 14px; cursor: pointer; }
-.sys-card.open .sys-header { background: var(--bg2); }
-.sys-name { font-family: monospace; font-size: 15px; font-weight: 700; flex: 1; }
-.sys-meta { font-size: 11px; color: var(--text2); font-family: monospace; }
-.sys-body { padding: 8px 14px 14px; }
+.search-row{display:flex;gap:8px;margin-bottom:12px}
+.search-row input{flex:1}
 
-/* Sys info row */
-.sys-info { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.info-chip { font-size: 12px; padding: 3px 9px; border-radius: 20px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); white-space: nowrap; }
-.info-chip.accent { background: var(--warn-bg); color: var(--warn-text); }
-.info-chip.teal { background: var(--success-bg); color: var(--success-text); }
+.sys-card{border:.5px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.sys-card.open{border-color:var(--bdr2)}
+.sys-header{display:flex;align-items:center;gap:8px;padding:14px;cursor:pointer}
+.sys-card.open .sys-header{background:var(--bg2)}
+.sys-name{font-family:monospace;font-size:15px;font-weight:700;flex:1}
+.sys-meta{font-size:11px;color:var(--text2);font-family:monospace}
+.sys-body{padding:8px 14px 14px}
+.sys-info{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--bg2);color:var(--text2);border:.5px solid var(--bdr);white-space:nowrap}
+.chip.warn{background:var(--warn-bg);color:var(--warn-tx)}
+.chip.ok{background:var(--ok-bg);color:var(--ok-tx)}
+.chip.info{background:var(--info-bg);color:var(--info-tx)}
+.chip.revisit{background:var(--ok-bg);color:var(--ok-tx);font-weight:700}
 
-/* Planet block */
-.planet-block { border: 0.5px solid var(--border); border-radius: var(--rs); margin-bottom: 8px; overflow: hidden; }
-.planet-header { display: flex; align-items: center; gap: 8px; padding: 11px 12px; cursor: pointer; background: var(--bg2); }
-.planet-header:active { background: var(--bg3); }
-.planet-num { font-size: 12px; font-weight: 700; font-family: monospace; background: var(--bg3); color: var(--text2); padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
-.planet-type { font-size: 13px; flex: 1; }
-.planet-stats { display: flex; gap: 5px; }
-.pstat { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg3); color: var(--text2); font-family: monospace; }
-.pstat.warn { background: var(--warn-bg); color: var(--warn-text); }
-.pstat.cargo { background: var(--info-bg); color: var(--info-text); }
+.planet-block{border:.5px solid var(--bdr);border-radius:var(--rs);margin-bottom:8px;overflow:hidden}
+.planet-hdr{display:flex;align-items:center;gap:6px;padding:11px 12px;cursor:pointer;background:var(--bg2)}
+.planet-hdr:active{background:var(--bg3)}
+.pnum{font-size:12px;font-weight:700;font-family:monospace;background:var(--bg3);color:var(--text2);padding:2px 8px;border-radius:4px;flex-shrink:0}
+.ptype{font-size:13px;flex:1}
+.ptags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:11px;padding:2px 6px;border-radius:4px;background:var(--bg3);color:var(--text2);font-family:monospace;white-space:nowrap}
+.tag.warn{background:var(--warn-bg);color:var(--warn-tx)}
+.tag.ok{background:var(--ok-bg);color:var(--ok-tx)}
+.tag.info{background:var(--info-bg);color:var(--info-tx)}
+.tag.revisit{background:var(--ok-bg);color:var(--ok-tx);font-weight:700}
+.tag.c-low{background:var(--bg3);color:var(--text3)}
+.tag.c-mid{background:var(--warn-bg);color:var(--warn-tx)}
+.tag.c-high{background:var(--ok-bg);color:var(--ok-tx)}
 
-.planet-body { padding: 10px 12px 12px; }
-.planet-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 10px; font-size: 13px; }
-.detail-item { display: flex; justify-content: space-between; }
-.detail-label { color: var(--text2); }
-.detail-value { font-weight: 500; font-family: monospace; }
+.planet-body{padding:10px 12px 12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px;font-size:13px}
+.detail-row{display:flex;justify-content:space-between;align-items:center}
+.dlabel{color:var(--text2)}
+.dval{font-weight:500;font-family:monospace}
 
-/* Moon block */
-.moon-section { margin-top: 8px; border-top: 0.5px solid var(--border); padding-top: 8px; }
-.moon-section-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-.moon-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--rs); margin-bottom: 5px; cursor: pointer; }
-.moon-row:active { background: var(--bg2); }
-.moon-num { font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text3); min-width: 48px; }
-.moon-type { font-size: 12px; flex: 1; }
-.moon-detail { padding: 8px 10px; border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 var(--rs) var(--rs); margin-top: -5px; margin-bottom: 5px; background: var(--bg2); }
+.moon-section{margin-top:8px;border-top:.5px solid var(--bdr);padding-top:8px}
+.moon-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.moon-row{display:flex;align-items:center;gap:6px;padding:8px 10px;border:.5px solid var(--bdr);border-radius:var(--rs);margin-bottom:5px;cursor:pointer}
+.moon-row:active{background:var(--bg2)}
+.mnum{font-size:11px;font-weight:700;font-family:monospace;color:var(--text3);min-width:52px;flex-shrink:0}
+.mtype{font-size:12px;flex:1}
+.moon-detail{padding:10px;border:.5px solid var(--bdr);border-top:none;border-radius:0 0 var(--rs) var(--rs);margin-top:-5px;margin-bottom:5px;background:var(--bg2)}
 
-/* Hazard display */
-.haz-row { display: flex; gap: 4px; }
-.haz-pip { width: 10px; height: 10px; border-radius: 2px; background: var(--border2); }
-.haz-pip.on { background: var(--accent); }
-.haz-pip.danger { background: var(--danger-text); }
+.pip-row{display:flex;gap:2px;align-items:center}
+.pip{width:10px;height:10px;border-radius:2px;background:var(--bdr2)}
+.pip.low{background:var(--text3)}
+.pip.mid{background:var(--accent)}
+.pip.high{background:var(--teal)}
 
-/* Form */
-.form-box { background: var(--bg2); border-radius: var(--r); padding: 16px; border: 0.5px solid var(--border2); margin-bottom: 10px; }
-.form-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-.form-field { margin-bottom: 10px; }
-.form-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-@media (max-width: 400px) {
-  .form-grid-3 { grid-template-columns: 1fr 1fr; }
-  .form-grid-4 { grid-template-columns: 1fr 1fr; }
-}
-.form-btns { display: flex; gap: 8px; margin-top: 12px; }
-.form-btns .btn-primary { flex: 1; }
-.form-section-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+.form-box{background:var(--bg2);border-radius:var(--r);padding:16px;border:.5px solid var(--bdr2);margin-bottom:10px}
+.form-title{font-size:15px;font-weight:700;margin-bottom:14px}
+.field{margin-bottom:10px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+@media(max-width:400px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}}
+.form-btns{display:flex;gap:8px;margin-top:12px}
+.form-btns .btn-primary{flex:1}
+.section-sep{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-top:10px;border-top:.5px solid var(--bdr)}
 
-/* Map */
-.map-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); cursor: pointer; padding: 10px 0; border-top: 0.5px solid var(--border); user-select: none; }
-canvas { display: block; width: 100%; border-radius: var(--rs); border: 0.5px solid var(--border); background: var(--bg2); }
-.map-legend { font-size: 10px; color: var(--text3); font-family: monospace; margin-top: 5px; line-height: 1.7; }
+.map-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;padding:10px 0;border-top:.5px solid var(--bdr);user-select:none}
+canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--bdr);background:var(--bg2)}
+.map-legend{font-size:10px;color:var(--text3);font-family:monospace;margin-top:5px;line-height:1.7}
 
-/* FAB */
-.fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 28px; line-height: 1; display: flex; align-items: center; justify-content: center; border: none; box-shadow: 0 3px 14px rgba(0,0,0,0.22); cursor: pointer; z-index: 100; transition: transform 0.12s; }
-.fab:active { transform: scale(0.92); }
-.fab.hidden { display: none; }
+.fab{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:20px;width:56px;height:56px;border-radius:50%;background:var(--text);color:var(--bg);font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 3px 14px rgba(0,0,0,.22);cursor:pointer;z-index:100;transition:transform .12s}
+.fab:active{transform:scale(.92)}
 
-/* Toast */
-.toast { position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; padding: 9px 18px; border-radius: 20px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 200; white-space: nowrap; }
-.toast.show { opacity: 1; }
+.toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);font-size:13px;padding:9px 18px;border-radius:20px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:200;white-space:nowrap}
+.toast.show{opacity:1}
 
-.empty { padding: 48px 0; text-align: center; color: var(--text3); font-family: monospace; font-size: 13px; line-height: 1.9; }
-.divider { border-top: 0.5px solid var(--border); margin: 10px 0 8px; }
-.logged-date { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
-.sys-notes { font-size: 13px; color: var(--text2); font-style: italic; margin-bottom: 8px; }
-.badge-revisit { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--success-bg); color: var(--success-text); font-weight: 600; white-space: nowrap; }
-.badge-cargo-high { background: var(--success-bg); color: var(--success-text); }
-.badge-cargo-mid  { background: var(--warn-bg);    color: var(--warn-text); }
-.badge-cargo-low  { background: var(--bg3);         color: var(--text3); }
-.cargo-bar { display: flex; gap: 2px; align-items: center; }
-.cargo-pip { width: 9px; height: 9px; border-radius: 2px; background: var(--border2); }
-.cargo-pip.low  { background: var(--text3); }
-.cargo-pip.mid  { background: var(--accent); }
-.cargo-pip.high { background: var(--teal); }
-.btn-del-inline { font-size: 14px; padding: 4px 9px; color: var(--danger-text); border-color: transparent; background: transparent; border-radius: var(--rs); flex-shrink: 0; line-height: 1; min-width: 32px; }
-.btn-del-inline:active { background: var(--danger-bg); }
-.btn-theme { font-size: 13px; padding: 5px 11px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; flex-shrink: 0; }
-.btn-theme:active { background: var(--bg3); }
-.export-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 0.5px solid var(--border); margin-top: 16px; }
+.empty{padding:48px 0;text-align:center;color:var(--text3);font-family:monospace;font-size:13px;line-height:1.9;white-space:pre-line}
+.divider{border-top:.5px solid var(--bdr);margin:10px 0 8px}
+.logged-date{font-size:11px;color:var(--text3);margin-bottom:10px}
+.sys-notes{font-size:13px;color:var(--text2);font-style:italic;margin-bottom:8px}
+.export-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:.5px solid var(--bdr);margin-top:16px}
+.chevron{font-size:11px;color:var(--text3);flex-shrink:0}
+</style>
 </head>
 <body>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-// ─── Constants ────────────────────────────────────────────────────
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ["Telluric","Water World","Gas Giant","Icy","Airless Rock","Acid","Alkali","Reducing","Radioactive","Treasure","Shattered","Carbon","Unknown"];
-const STAR_COLORS  = ["Yellow","Blue","Orange","Red","White","Brown Dwarf","Binary","Unknown"];
-const HAZ_RANGE    = [0,1,2,3,4,5];
-const CARGO_RANGE  = [0,1,2,3,4,5,6,7,8];
-const CARGO_LABELS = ['— (unsurveyed)','1 – Ignore','2 – Skip','3 – Low','4 – Moderate','5 – Decent','6 – Good ✦','7 – High ✦✦','8 – Excellent ✦✦✦'];
-const STORAGE_KEY  = 'sc2-explorer-v2';
+const PLANET_TYPES = ['Telluric','Water World','Gas Giant','Icy','Airless Rock','Acid','Alkali','Reducing','Radioactive','Treasure','Shattered','Carbon','Unknown'];
+const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
+const HAZ          = [0,1,2,3,4,5];
+const CARGO_OPTS   = [0,1,2,3,4,5,6,7,8];
+const CARGO_LBL    = ['— unsurveyed','1 – Ignore','2 – Skip','3 – Low','4 – Moderate','5 – Decent','6 – Good ✦','7 – High ✦✦','8 – Excellent ✦✦✦'];
+const KEY          = 'sc2-v2';
 
-// ─── Theme ────────────────────────────────────────────────────────
-function initTheme() {
-  const saved = localStorage.getItem('sc2-theme') || 'dark';
-  document.documentElement.classList.toggle('light', saved === 'light');
+// ── State ─────────────────────────────────────────────────────────
+let S = {systems:[]};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false};
+
+// ── Persistence ───────────────────────────────────────────────────
+function load(){try{const d=localStorage.getItem(KEY);if(d)S=JSON.parse(d)}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000)}
+
+// ── Theme ─────────────────────────────────────────────────────────
+function initTheme(){
+  const t = localStorage.getItem('sc2-theme') || 'dark';
+  document.documentElement.classList.toggle('light', t === 'light');
 }
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('sc2-theme', isLight ? 'light' : 'dark');
+function toggleTheme(){
+  const nowLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('sc2-theme', nowLight ? 'light' : 'dark');
   drawMap();
+  // update button label
+  const btn = document.getElementById('theme-btn');
+  if(btn) btn.textContent = nowLight ? '☀ Light' : '☾ Dark';
 }
 
-// ─── State ────────────────────────────────────────────────────────
-let state = { systems: [] };
-let ui = { selectedSys: null, openPlanets: {}, openMoons: {}, addingSys: false, addingPlanet: null, addingMoon: null, editingPlanet: null, editingMoon: null, editingSys: null, search: '', mapOpen: false };
+// ── Helpers ───────────────────────────────────────────────────────
+function distSol(x,y){return Math.round(Math.sqrt(Math.pow(x-SOL_X,2)+Math.pow(y-SOL_Y,2)))}
+function cargoClass(v){return v>=6?'c-high':v>=3?'c-mid':'c-low'}
+function cargoTier(v){return v>=6?'high':v>=3?'mid':'low'}
 
-// ─── Persistence ──────────────────────────────────────────────────
-function load() { try { const d = localStorage.getItem(STORAGE_KEY); if (d) state = JSON.parse(d); } catch {} }
-function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
-function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2000); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
-
-// ─── Calculations ─────────────────────────────────────────────────
-function distFromSol(x, y) {
-  return Math.round(Math.sqrt(Math.pow(x - SOL_X, 2) + Math.pow(y - SOL_Y, 2)));
-}
-function cargoTier(v) { return v >= 6 ? 'high' : v >= 3 ? 'mid' : 'low'; }
-function cargoPips(v) {
-  const bar = h('div',{class:'cargo-bar'});
-  for (let i = 1; i <= 8; i++) {
-    const tier = i >= 6 ? 'high' : i >= 3 ? 'mid' : 'low';
-    bar.appendChild(h('div',{class:`cargo-pip${i <= v ? ' '+tier : ''}`}));
+function el(tag,attrs,...kids){
+  const e=document.createElement(tag);
+  if(attrs) for(const[k,v]of Object.entries(attrs)){
+    if(v==null) continue;
+    if(k==='class') e.className=v;
+    else if(k==='style'&&typeof v==='object') Object.assign(e.style,v);
+    else if(k.startsWith('on')&&typeof v==='function') e.addEventListener(k.slice(2).toLowerCase(),v);
+    else e.setAttribute(k,String(v));
   }
-  return bar;
+  for(const c of kids.flat(4)) if(c!=null) e.appendChild(typeof c==='string'?document.createTextNode(c):c);
+  return e;
 }
-
-// ─── DOM Helpers ──────────────────────────────────────────────────
-function h(tag, attrs, ...kids) {
-  const el = document.createElement(tag);
-  if (attrs) for (const [k,v] of Object.entries(attrs)) {
-    if (k === 'class') el.className = v;
-    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
-    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
-    else el.setAttribute(k, v);
-  }
-  for (const c of kids.flat(3)) if (c != null) el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
-  return el;
+function field(labelText,input){return el('div',{class:'field'},el('label',{},labelText),input)}
+function mkSel(opts,labels,val,cb){
+  const s=el('select',{onchange:e=>cb(e.target.value)});
+  opts.forEach((o,i)=>{
+    const opt=el('option',{value:String(o)},labels?labels[i]:String(o));
+    if(String(o)===String(val)) opt.selected=true;
+    s.appendChild(opt);
+  });
+  return s;
 }
-function lbl(text, content) { return h('div', {class:'form-field'}, h('label', {}, text), content); }
-function sel(opts, val, onChange) {
-  const el = h('select', {onchange: e => onChange(e.target.value)});
-  opts.forEach(o => { const opt = h('option', {value: String(o)}, String(o)); if (String(o) === String(val)) opt.selected = true; el.appendChild(opt); });
-  return el;
+function mkInp(type,val,cb,attrs={}){
+  const i=el('input',{type,...attrs});
+  i.value=String(val??'');
+  i.addEventListener('input',e=>cb(e.target.value));
+  return i;
 }
-function inp(type, val, onChange, attrs={}) {
-  const el = h('input', { type, value: String(val ?? ''), ...attrs });
-  el.addEventListener('input', e => onChange(e.target.value));
-  return el;
-}
-function hazPips(val) {
-  const danger = val >= 4;
-  const row = h('div', {class:'haz-row'});
-  for (let i = 1; i <= 5; i++) {
-    row.appendChild(h('div', {class: `haz-pip${i <= val ? (danger ? ' danger' : ' on') : ''}`}));
+function pipBar(val,max=5){
+  const row=el('div',{class:'pip-row'});
+  for(let i=1;i<=max;i++){
+    const tier=max===8?(i>=6?'high':i>=3?'mid':'low'):(i>=4?'mid':'low');
+    row.appendChild(el('div',{class:'pip'+(i<=val?' '+tier:'')}));
   }
   return row;
 }
 
-// ─── System CRUD ──────────────────────────────────────────────────
-function addSystem(data) {
-  const sys = { id: uid(), name: data.name, x: data.x, y: data.y, starColor: data.starColor, notes: data.notes, addedAt: new Date().toLocaleDateString(), planets: [] };
-  state.systems.push(sys);
-  save(); ui.addingSys = false; ui.selectedSys = sys.id; render();
+// ── CRUD ──────────────────────────────────────────────────────────
+function addSys(d){
+  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,notes:d.notes||'',addedAt:new Date().toLocaleDateString(),planets:[]};
+  S.systems.push(s); persist(); UI.addSys=false; UI.sel=s.id; render();
 }
-function updateSystem(id, data) {
-  const s = state.systems.find(s => s.id === id);
-  if (s) Object.assign(s, data);
-  save(); ui.editingSys = null; render();
+function updateSys(id,d){
+  const s=S.systems.find(s=>s.id===id);
+  if(s) Object.assign(s,{name:d.name,x:d.x,y:d.y,starColor:d.starColor,notes:d.notes||''});
+  persist(); UI.editSys=null; render();
 }
-function deleteSystem(id) {
-  if (!confirm('Delete this star system and all its data?')) return;
-  state.systems = state.systems.filter(s => s.id !== id);
-  save(); ui.selectedSys = null; render();
+function delSys(id){
+  if(!confirm('Delete this star system and all its data?')) return;
+  S.systems=S.systems.filter(s=>s.id!==id);
+  persist(); UI.sel=null; render();
 }
-
-// ─── Planet CRUD ──────────────────────────────────────────────────
-function planetDefaults() { return { id: uid(), type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '', moons: [] }; }
-function addPlanet(sysId, data) {
-  const sys = state.systems.find(s => s.id === sysId);
-  if (!sys) return;
-  sys.planets.push({ ...planetDefaults(), ...data, id: uid(), moons: [] });
-  save(); ui.addingPlanet = null; render();
+function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],weather:0,tectonics:0,temperature:0,cargoValue:0,bioLifeforms:false,notes:'',moons:[]}}
+function addPlanet(sysId,d){
+  const s=S.systems.find(s=>s.id===sysId); if(!s) return;
+  s.planets.push({...bodyDefaults(),...d,id:uid(),moons:[]}); persist(); UI.addPlanet=null; render();
 }
-function updatePlanet(sysId, planetId, data) {
-  const sys = state.systems.find(s => s.id === sysId);
-  if (!sys) return;
-  const idx = sys.planets.findIndex(p => p.id === planetId);
-  if (idx >= 0) sys.planets[idx] = { ...sys.planets[idx], ...data };
-  save(); ui.editingPlanet = null; render();
+function updatePlanet(sysId,pid,d){
+  const s=S.systems.find(s=>s.id===sysId); if(!s) return;
+  const i=s.planets.findIndex(p=>p.id===pid);
+  if(i>=0) s.planets[i]={...s.planets[i],...d};
+  persist(); UI.editPlanet=null; render();
 }
-function deletePlanet(sysId, planetId) {
-  const sys = state.systems.find(s => s.id === sysId);
-  if (sys) sys.planets = sys.planets.filter(p => p.id !== planetId);
-  save(); render();
+function delPlanet(sysId,pid){
+  const s=S.systems.find(s=>s.id===sysId); if(!s) return;
+  if(!confirm('Delete this planet?')) return;
+  s.planets=s.planets.filter(p=>p.id!==pid); persist(); render();
 }
-
-// ─── Moon CRUD ────────────────────────────────────────────────────
-function moonDefaults() { return { id: uid(), type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '' }; }
-function addMoon(sysId, planetId, data) {
-  const sys = state.systems.find(s => s.id === sysId);
-  const planet = sys?.planets.find(p => p.id === planetId);
-  if (!planet) return;
-  planet.moons.push({ ...moonDefaults(), ...data, id: uid() });
-  save(); ui.addingMoon = null; render();
+function addMoon(sysId,pid,d){
+  const p=S.systems.find(s=>s.id===sysId)?.planets.find(p=>p.id===pid); if(!p) return;
+  if(!p.moons) p.moons=[];
+  p.moons.push({...bodyDefaults(),...d,id:uid()}); persist(); UI.addMoon=null; render();
 }
-function updateMoon(sysId, planetId, moonId, data) {
-  const sys = state.systems.find(s => s.id === sysId);
-  const planet = sys?.planets.find(p => p.id === planetId);
-  if (!planet) return;
-  const idx = planet.moons.findIndex(m => m.id === moonId);
-  if (idx >= 0) planet.moons[idx] = { ...planet.moons[idx], ...data };
-  save(); ui.editingMoon = null; render();
+function updateMoon(sysId,pid,mid,d){
+  const p=S.systems.find(s=>s.id===sysId)?.planets.find(p=>p.id===pid); if(!p) return;
+  const i=p.moons.findIndex(m=>m.id===mid);
+  if(i>=0) p.moons[i]={...p.moons[i],...d};
+  persist(); UI.editMoon=null; render();
 }
-function deleteMoon(sysId, planetId, moonId) {
-  const sys = state.systems.find(s => s.id === sysId);
-  const planet = sys?.planets.find(p => p.id === planetId);
-  if (planet) planet.moons = planet.moons.filter(m => m.id !== moonId);
-  save(); render();
+function delMoon(sysId,pid,mid){
+  const p=S.systems.find(s=>s.id===sysId)?.planets.find(p=>p.id===pid); if(!p) return;
+  if(!confirm('Delete this moon?')) return;
+  p.moons=p.moons.filter(m=>m.id!==mid); persist(); render();
 }
 
-// ─── Body Form (planet or moon) ───────────────────────────────────
-function buildBodyForm(existing, onSave, onCancel, title) {
-  const d = { type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '', ...existing };
-  const box = h('div', {class:'form-box'});
-  box.appendChild(h('div', {class:'form-title'}, title));
+// ── Body Form (planet or moon) ────────────────────────────────────
+function bodyForm(existing,title,onSave,onCancel){
+  const d={type:PLANET_TYPES[0],weather:0,tectonics:0,temperature:0,cargoValue:0,bioLifeforms:false,notes:'',...existing};
+  const box=el('div',{class:'form-box'},el('div',{class:'form-title'},title));
 
-  const typeEl = sel(PLANET_TYPES, d.type, v => d.type = v);
-  box.appendChild(lbl('Body type', typeEl));
+  box.appendChild(field('Body type', mkSel(PLANET_TYPES,null,d.type,v=>d.type=v)));
 
-  box.appendChild(h('div', {class:'form-section-label'}, 'Hazards'));
-  const hazGrid = h('div', {class:'form-grid-3'});
+  box.appendChild(el('div',{class:'section-sep'},'Hazards'));
+  const g=el('div',{class:'g3'});
+  g.appendChild(el('div',{},el('label',{},'Weather (0–5)'),mkSel(HAZ,null,d.weather,v=>d.weather=+v)));
+  g.appendChild(el('div',{},el('label',{},'Tectonics (0–5)'),mkSel(HAZ,null,d.tectonics,v=>d.tectonics=+v)));
+  g.appendChild(el('div',{},el('label',{},'Temp (0–5)'),mkSel(HAZ,null,d.temperature,v=>d.temperature=+v)));
+  box.appendChild(g);
 
-  const weatherEl = sel(HAZ_RANGE, d.weather, v => d.weather = parseInt(v));
-  const tectonicsEl = sel(HAZ_RANGE, d.tectonics, v => d.tectonics = parseInt(v));
-  const tempEl = inp('number', d.temperature, v => d.temperature = parseInt(v) || 0, {inputmode:'numeric', min:'-5', max:'5'});
+  box.appendChild(el('div',{class:'section-sep'},'Resources'));
+  const cargoSel=mkSel(CARGO_OPTS,CARGO_LBL,d.cargoValue,v=>d.cargoValue=+v);
+  box.appendChild(field('Max resource value (0–8)',cargoSel));
 
-  hazGrid.appendChild(h('div', {}, h('label',{},'Weather (0–5)'), weatherEl));
-  hazGrid.appendChild(h('div', {}, h('label',{},'Tectonics (0–5)'), tectonicsEl));
-  hazGrid.appendChild(h('div', {}, h('label',{},'Temp (0–5)'), tempEl));
-  box.appendChild(hazGrid);
+  box.appendChild(el('div',{class:'section-sep'},'Biology'));
+  const bioSel=mkSel(['No','Yes'],null,d.bioLifeforms?'Yes':'No',v=>d.bioLifeforms=v==='Yes');
+  box.appendChild(field('Biological lifeforms present',bioSel));
 
-  box.appendChild(h('div', {class:'form-section-label'}, 'Resources'));
-  const cargoEl = sel(CARGO_RANGE, d.cargoValue, v => d.cargoValue = parseInt(v));
-  // replace option text with labels
-  cargoEl.querySelectorAll('option').forEach((opt, i) => { opt.textContent = CARGO_LABELS[i]; });
-  box.appendChild(lbl('Max resource value (0–8)', cargoEl));
+  const notesTA=el('textarea',{rows:'2',placeholder:'Notes...'});
+  notesTA.value=d.notes;
+  notesTA.addEventListener('input',e=>d.notes=e.target.value);
+  box.appendChild(field('Notes',notesTA));
 
-  const bioEl = sel(['No','Yes'], d.bioLifeforms ? 'Yes' : 'No', v => d.bioLifeforms = v === 'Yes');
-  box.appendChild(lbl('Biological lifeforms present', bioEl));
-
-  const notesEl = h('textarea', {rows:'2', placeholder:'Notes...'});
-  notesEl.value = d.notes;
-  notesEl.addEventListener('input', e => d.notes = e.target.value);
-  box.appendChild(lbl('Notes', notesEl));
-
-  const btns = h('div', {class:'form-btns'});
-  const saveBtn = h('button', {class:'btn-primary'}, 'Save');
-  saveBtn.addEventListener('click', () => onSave(d));
-  const cancelBtn = h('button', {}, 'Cancel');
-  cancelBtn.addEventListener('click', onCancel);
-  btns.appendChild(saveBtn); btns.appendChild(cancelBtn);
-  box.appendChild(btns);
+  const saveBtn=el('button',{class:'btn-primary'},existing?'Save changes':'Save');
+  saveBtn.addEventListener('click',()=>onSave(d));
+  const cancelBtn=el('button',{},'Cancel');
+  cancelBtn.addEventListener('click',onCancel);
+  box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
   return box;
 }
 
-// ─── System Form ──────────────────────────────────────────────────
-function buildSystemForm(existing, onSave, onCancel) {
-  const d = { name:'', x: 500, y: 500, starColor: STAR_COLORS[0], notes:'', ...existing };
-  const box = h('div', {class:'form-box'});
-  box.appendChild(h('div', {class:'form-title'}, existing ? 'Edit star system' : 'Log new star system'));
+// ── System Form ───────────────────────────────────────────────────
+function sysForm(existing,onSave,onCancel){
+  const d={name:'',x:500,y:500,starColor:STAR_COLORS[0],notes:'',...existing};
+  const box=el('div',{class:'form-box'},el('div',{class:'form-title'},existing?'Edit star system':'Log new star system'));
 
-  const nameEl = inp('text', d.name, v => d.name = v, {placeholder:'e.g. Vega'});
-  box.appendChild(lbl('Star system name', nameEl));
-  setTimeout(() => { if (!existing) nameEl.focus(); }, 60);
+  const nameInp=mkInp('text',d.name,v=>d.name=v,{placeholder:'e.g. Vega'});
+  box.appendChild(field('Star system name',nameInp));
+  setTimeout(()=>{if(!existing) nameInp.focus();},60);
 
-  const starColorEl = sel(STAR_COLORS, d.starColor, v => d.starColor = v);
-  box.appendChild(lbl('Star color', starColorEl));
+  box.appendChild(field('Star color',mkSel(STAR_COLORS,null,d.starColor,v=>d.starColor=v)));
 
-  const coordGrid = h('div', {class:'form-grid-2'});
-  const xEl = inp('number', d.x, v => d.x = Math.min(1000, Math.max(0, parseInt(v)||0)), {inputmode:'numeric', min:'0', max:'1000', placeholder:'0–1000'});
-  const yEl = inp('number', d.y, v => d.y = Math.min(1000, Math.max(0, parseInt(v)||0)), {inputmode:'numeric', min:'0', max:'1000', placeholder:'0–1000'});
-  coordGrid.appendChild(h('div',{}, h('label',{},'X coord'), xEl));
-  coordGrid.appendChild(h('div',{}, h('label',{},'Y coord'), yEl));
-  box.appendChild(coordGrid);
+  const g=el('div',{class:'g2'});
+  const xInp=mkInp('number',d.x,v=>d.x=Math.min(1000,Math.max(0,+v||0)),{inputmode:'numeric',min:'0',max:'1000',placeholder:'0–1000'});
+  const yInp=mkInp('number',d.y,v=>d.y=Math.min(1000,Math.max(0,+v||0)),{inputmode:'numeric',min:'0',max:'1000',placeholder:'0–1000'});
+  g.appendChild(el('div',{},el('label',{},'X coord'),xInp));
+  g.appendChild(el('div',{},el('label',{},'Y coord'),yInp));
+  box.appendChild(g);
 
-  const notesEl = inp('text', d.notes, v => d.notes = v, {placeholder:'Quasispace portal, NPC race...'});
-  box.appendChild(lbl('Notes (optional)', notesEl));
+  const notesInp=mkInp('text',d.notes,v=>d.notes=v,{placeholder:'Quasispace portal, NPC race...'});
+  box.appendChild(field('Notes (optional)',notesInp));
 
-  const btns = h('div', {class:'form-btns'});
-  const saveBtn = h('button', {class:'btn-primary'}, existing ? 'Save changes' : 'Log system ↗');
-  saveBtn.addEventListener('click', () => { if (!d.name.trim()) { nameEl.focus(); return; } onSave(d); });
-  const cancelBtn = h('button', {}, 'Cancel');
-  cancelBtn.addEventListener('click', onCancel);
-  btns.appendChild(saveBtn); btns.appendChild(cancelBtn);
-  box.appendChild(btns);
+  const saveBtn=el('button',{class:'btn-primary'},existing?'Save changes':'Log system ↗');
+  saveBtn.addEventListener('click',()=>{if(!d.name.trim()){nameInp.focus();return;}onSave(d);});
+  const cancelBtn=el('button',{},'Cancel');
+  cancelBtn.addEventListener('click',onCancel);
+  box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
   return box;
 }
 
-// ─── Moon row ─────────────────────────────────────────────────────
-function buildMoonRow(moon, moonNum, sysId, planetId) {
-  const key = `${planetId}-${moon.id}`;
-  const isOpen = !!ui.openMoons[key];
-  const frag = document.createDocumentFragment();
+// ── Moon row ──────────────────────────────────────────────────────
+function moonRow(moon,num,sysId,pid){
+  const key=pid+moon.id;
+  const isOpen=!!UI.openM[key];
+  const frag=document.createDocumentFragment();
 
-  if (ui.editingMoon === moon.id) {
-    frag.appendChild(buildBodyForm(
-      moon,
-      data => updateMoon(sysId, planetId, moon.id, data),
-      () => { ui.editingMoon = null; render(); },
-      `Edit Moon ${moonNum}`
+  if(UI.editMoon===moon.id){
+    frag.appendChild(bodyForm(moon,`Edit Moon ${num}`,
+      d=>updateMoon(sysId,pid,moon.id,d),
+      ()=>{UI.editMoon=null;render();}
     ));
     return frag;
   }
 
-  const row = h('div', {class:'moon-row'},
-    h('span', {class:'moon-num'}, `Moon ${moonNum}`),
-    h('span', {class:'moon-type'}, moon.type),
-    moon.weather > 0 ? h('span', {class:'pstat warn'}, `W${moon.weather}`) : null,
-    moon.tectonics > 0 ? h('span', {class:'pstat warn'}, `T${moon.tectonics}`) : null,
-    moon.cargoValue > 0 ? h('span', {class:`pstat badge-cargo-${cargoTier(moon.cargoValue)}`}, `C${moon.cargoValue}`) : null,
-    moon.cargoValue >= 6 ? h('span', {class:'badge-revisit'}, 'revisit') : null,
-    moon.bioLifeforms ? h('span', {class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio') : null,
-    h('span', {class:'chevron', style:{color:'var(--text3)', fontSize:'11px', marginLeft:'auto'}}, isOpen ? '▲':'▼')
+  const tags=el('div',{class:'ptags'});
+  if(moon.weather>0) tags.appendChild(el('span',{class:'tag'+(moon.weather>=4?' warn':'')},`W${moon.weather}`));
+  if(moon.tectonics>0) tags.appendChild(el('span',{class:'tag'+(moon.tectonics>=4?' warn':'')},`T${moon.tectonics}`));
+  if(moon.cargoValue>0) tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},`C${moon.cargoValue}`));
+  if(moon.cargoValue>=6) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(moon.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
+
+  const delBtn=el('button',{class:'btn-del'},'✕');
+  delBtn.addEventListener('click',e=>{e.stopPropagation();delMoon(sysId,pid,moon.id);});
+
+  const row=el('div',{class:'moon-row'},
+    el('span',{class:'mnum'},`Moon ${num}`),
+    el('span',{class:'mtype'},moon.type),
+    tags,
+    el('span',{class:'chevron'},isOpen?'▲':'▼'),
+    delBtn
   );
-  const delMoonBtn = h('button', {class:'btn-del-inline', title:'Delete moon'}, '✕');
-  delMoonBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    if (confirm(`Delete Moon ${moonNum} (${moon.type})?`)) deleteMoon(sysId, planetId, moon.id);
-  });
-  row.appendChild(delMoonBtn);
-  row.addEventListener('click', () => { ui.openMoons[key] = !isOpen; render(); });
+  row.addEventListener('click',()=>{UI.openM[key]=!isOpen;render();});
   frag.appendChild(row);
 
-  if (isOpen) {
-    const detail = h('div', {class:'moon-detail'});
-    const grid = h('div', {class:'planet-detail-grid'});
-    const items = [
-      ['Weather', moon.weather > 0 ? hazPips(moon.weather) : '—'],
-      ['Tectonics', moon.tectonics > 0 ? hazPips(moon.tectonics) : '—'],
-      ['Temperature', moon.temperature ? `${moon.temperature}/5` : '—'],
-      ['Max resource', moon.cargoValue > 0 ? cargoPips(moon.cargoValue) : '—'],
-      ['Bio lifeforms', moon.bioLifeforms ? 'Yes' : 'No'],
-    ];
-    items.forEach(([label, val]) => {
-      const item = h('div', {class:'detail-item'}, h('span',{class:'detail-label'},label));
-      const valEl = typeof val === 'string' ? h('span',{class:'detail-value'},val) : val;
-      item.appendChild(valEl);
-      grid.appendChild(item);
+  if(isOpen){
+    const det=el('div',{class:'moon-detail'});
+    const grid=el('div',{class:'detail-grid'});
+    [['Weather',moon.weather>0?pipBar(moon.weather):'—'],
+     ['Tectonics',moon.tectonics>0?pipBar(moon.tectonics):'—'],
+     ['Temperature',moon.temperature?`${moon.temperature}/5`:'—'],
+     ['Max resource',moon.cargoValue>0?pipBar(moon.cargoValue,8):'—'],
+     ['Bio lifeforms',moon.bioLifeforms?'Yes':'No']
+    ].forEach(([lbl,val])=>{
+      const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
+      r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
+      grid.appendChild(r);
     });
-    detail.appendChild(grid);
-    if (moon.notes) detail.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'8px'}},moon.notes));
-    const btns = h('div',{style:{display:'flex',gap:'6px'}});
-    const editBtn = h('button',{class:'btn-sm'},'Edit');
-    editBtn.addEventListener('click', e => { e.stopPropagation(); ui.editingMoon = moon.id; render(); });
-    const delBtn = h('button',{class:'btn-sm btn-danger'},'Remove');
-    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMoon(sysId, planetId, moon.id); });
-    btns.appendChild(editBtn); btns.appendChild(delBtn);
-    detail.appendChild(btns);
-    frag.appendChild(detail);
+    det.appendChild(grid);
+    if(moon.notes) det.appendChild(el('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'8px'}},moon.notes));
+    const editBtn=el('button',{class:'btn-sm'},'Edit');
+    editBtn.addEventListener('click',e=>{e.stopPropagation();UI.editMoon=moon.id;render();});
+    det.appendChild(el('div',{style:{display:'flex',gap:'6px'}},editBtn));
+    frag.appendChild(det);
   }
   return frag;
 }
 
-// ─── Planet block ─────────────────────────────────────────────────
-function buildPlanetBlock(planet, planetNum, sys) {
-  const isOpen = !!ui.openPlanets[planet.id];
-  const block = h('div', {class:'planet-block'});
+// ── Planet block ──────────────────────────────────────────────────
+function planetBlock(planet,num,sys){
+  const isOpen=!!UI.openP[planet.id];
+  const block=el('div',{class:'planet-block'});
 
-  if (ui.editingPlanet === planet.id) {
-    block.appendChild(buildBodyForm(
-      planet,
-      data => updatePlanet(sys.id, planet.id, data),
-      () => { ui.editingPlanet = null; render(); },
-      `Edit Planet ${planetNum}`
+  if(UI.editPlanet===planet.id){
+    block.appendChild(bodyForm(planet,`Edit Planet ${num}`,
+      d=>updatePlanet(sys.id,planet.id,d),
+      ()=>{UI.editPlanet=null;render();}
     ));
     return block;
   }
 
-  const stats = h('div', {class:'planet-stats'});
-  if (planet.weather > 0) stats.appendChild(h('span',{class:`pstat${planet.weather>=4?' warn':''}`}, `W${planet.weather}`));
-  if (planet.tectonics > 0) stats.appendChild(h('span',{class:`pstat${planet.tectonics>=4?' warn':''}`}, `T${planet.tectonics}`));
-  if (planet.temperature > 0) stats.appendChild(h('span',{class:`pstat${planet.temperature>=4?' warn':''}`}, `${planet.temperature}°`));
-  if (planet.cargoValue > 0) {
-    const tier = cargoTier(planet.cargoValue);
-    stats.appendChild(h('span',{class:`pstat cargo badge-cargo-${tier}`}, `C${planet.cargoValue}`));
-    if (planet.cargoValue >= 6) stats.appendChild(h('span',{class:'badge-revisit'}, 'revisit'));
-  }
-  if (planet.bioLifeforms) stats.appendChild(h('span',{class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio'));
+  const tags=el('div',{class:'ptags'});
+  if(planet.weather>0) tags.appendChild(el('span',{class:'tag'+(planet.weather>=4?' warn':'')},`W${planet.weather}`));
+  if(planet.tectonics>0) tags.appendChild(el('span',{class:'tag'+(planet.tectonics>=4?' warn':'')},`T${planet.tectonics}`));
+  if(planet.temperature>0) tags.appendChild(el('span',{class:'tag'+(planet.temperature>=4?' warn':'')},`${planet.temperature}°`));
+  if(planet.cargoValue>0) tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},`C${planet.cargoValue}`));
+  if(planet.cargoValue>=6) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(planet.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
+  const moons=planet.moons||[];
+  if(moons.length>0) tags.appendChild(el('span',{class:'tag'},`${moons.length}☽`));
 
-  const delPlanetBtn = h('button', {class:'btn-del-inline', title:'Delete planet'}, '✕');
-  delPlanetBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    if (confirm(`Delete Planet ${planetNum} (${planet.type})?`)) deletePlanet(sys.id, planet.id);
-  });
+  const delBtn=el('button',{class:'btn-del'},'✕');
+  delBtn.addEventListener('click',e=>{e.stopPropagation();delPlanet(sys.id,planet.id);});
 
-  const header = h('div', {class:'planet-header'},
-    h('span', {class:'planet-num'}, `Planet ${planetNum}`),
-    h('span', {class:'planet-type'}, planet.type),
-    stats,
-    planet.moons.length > 0 ? h('span',{class:'pstat',style:{marginLeft:'2px'}},`${planet.moons.length}☽`) : null,
-    h('span', {class:'chevron',style:{fontSize:'11px',color:'var(--text3)',marginLeft:'4px'}}, isOpen?'▲':'▼'),
-    delPlanetBtn
+  const hdr=el('div',{class:'planet-hdr'},
+    el('span',{class:'pnum'},`Planet ${num}`),
+    el('span',{class:'ptype'},planet.type),
+    tags,
+    el('span',{class:'chevron'},isOpen?'▲':'▼'),
+    delBtn
   );
-  header.addEventListener('click', () => { ui.openPlanets[planet.id] = !isOpen; render(); });
-  block.appendChild(header);
+  hdr.addEventListener('click',()=>{UI.openP[planet.id]=!isOpen;render();});
+  block.appendChild(hdr);
 
-  if (isOpen) {
-    const body = h('div', {class:'planet-body'});
-
-    const grid = h('div', {class:'planet-detail-grid'});
-    [
-      ['Weather', planet.weather > 0 ? hazPips(planet.weather) : '—'],
-      ['Tectonics', planet.tectonics > 0 ? hazPips(planet.tectonics) : '—'],
-      ['Temperature', planet.temperature ? `${planet.temperature}/5` : '—'],
-      ['Max resource', planet.cargoValue > 0 ? cargoPips(planet.cargoValue) : '—'],
-      ['Bio lifeforms', planet.bioLifeforms ? 'Yes' : 'No'],
-    ].forEach(([label, val]) => {
-      const item = h('div',{class:'detail-item'}, h('span',{class:'detail-label'},label));
-      item.appendChild(typeof val === 'string' ? h('span',{class:'detail-value'},val) : val);
-      grid.appendChild(item);
+  if(isOpen){
+    const body=el('div',{class:'planet-body'});
+    const grid=el('div',{class:'detail-grid'});
+    [['Weather',planet.weather>0?pipBar(planet.weather):'—'],
+     ['Tectonics',planet.tectonics>0?pipBar(planet.tectonics):'—'],
+     ['Temperature',planet.temperature?`${planet.temperature}/5`:'—'],
+     ['Max resource',planet.cargoValue>0?pipBar(planet.cargoValue,8):'—'],
+     ['Bio lifeforms',planet.bioLifeforms?'Yes':'No']
+    ].forEach(([lbl,val])=>{
+      const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
+      r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
+      grid.appendChild(r);
     });
     body.appendChild(grid);
+    if(planet.notes) body.appendChild(el('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'10px'}},planet.notes));
 
-    if (planet.notes) body.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'10px'}},planet.notes));
+    const editBtn=el('button',{class:'btn-sm',style:{marginBottom:'8px'}},'Edit planet');
+    editBtn.addEventListener('click',()=>{UI.editPlanet=planet.id;render();});
+    body.appendChild(editBtn);
 
-    const pBtns = h('div',{style:{display:'flex',gap:'6px',marginBottom:'8px'}});
-    const editBtn = h('button',{class:'btn-sm'},'Edit planet');
-    editBtn.addEventListener('click', () => { ui.editingPlanet = planet.id; render(); });
-    const delBtn = h('button',{class:'btn-sm btn-danger'},'Remove');
-    delBtn.addEventListener('click', () => deletePlanet(sys.id, planet.id));
-    pBtns.appendChild(editBtn); pBtns.appendChild(delBtn);
-    body.appendChild(pBtns);
+    // Moons
+    const moonSec=el('div',{class:'moon-section'},el('div',{class:'moon-section-title'},`Moons (${moons.length})`));
+    moons.forEach((m,i)=>moonSec.appendChild(moonRow(m,i+1,sys.id,planet.id)));
 
-    // Moons section
-    const moonSection = h('div', {class:'moon-section'});
-    moonSection.appendChild(h('div',{class:'moon-section-title'}, `Moons (${planet.moons.length})`));
-    planet.moons.forEach((moon, i) => moonSection.appendChild(buildMoonRow(moon, i+1, sys.id, planet.id)));
-
-    if (ui.addingMoon === planet.id) {
-      moonSection.appendChild(buildBodyForm(
-        null,
-        data => addMoon(sys.id, planet.id, data),
-        () => { ui.addingMoon = null; render(); },
-        'Add Moon'
+    if(UI.addMoon===planet.id){
+      moonSec.appendChild(bodyForm(null,'Add Moon',
+        d=>addMoon(sys.id,planet.id,d),
+        ()=>{UI.addMoon=null;render();}
       ));
     } else {
-      const addMoonBtn = h('button',{class:'btn-sm',style:{marginTop:'4px'}},'+ Add moon');
-      addMoonBtn.addEventListener('click', () => { ui.addingMoon = planet.id; ui.addingPlanet = null; render(); });
-      moonSection.appendChild(addMoonBtn);
+      const addMBtn=el('button',{class:'btn-sm',style:{marginTop:'4px'}},'+ Add moon');
+      addMBtn.addEventListener('click',()=>{UI.addMoon=planet.id;UI.addPlanet=null;render();});
+      moonSec.appendChild(addMBtn);
     }
-    body.appendChild(moonSection);
+    body.appendChild(moonSec);
     block.appendChild(body);
   }
   return block;
 }
 
-// ─── System card ──────────────────────────────────────────────────
-function buildSysCard(sys) {
-  const isOpen = ui.selectedSys === sys.id;
-  const dist = distFromSol(sys.x, sys.y);
-  const card = h('div', {class: isOpen ? 'sys-card open' : 'sys-card'});
+// ── System card ───────────────────────────────────────────────────
+function sysCard(sys){
+  const isOpen=UI.sel===sys.id;
+  const dist=distSol(sys.x,sys.y);
+  const card=el('div',{class:'sys-card'+(isOpen?' open':'')});
 
-  const delSysBtn = h('button', {class:'btn-del-inline', title:'Delete system'}, '✕');
-  delSysBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    deleteSystem(sys.id);
-  });
+  const delBtn=el('button',{class:'btn-del'},'✕');
+  delBtn.addEventListener('click',e=>{e.stopPropagation();delSys(sys.id);});
 
-  const header = h('div', {class:'sys-header'},
-    h('div', {style:{flex:'1'}},
-      h('div', {class:'sys-name'}, sys.name),
-      h('div', {class:'sys-meta'}, `(${sys.x}, ${sys.y}) · ${dist} from Sol`)
+  const hdr=el('div',{class:'sys-header'},
+    el('div',{style:{flex:'1'}},
+      el('div',{class:'sys-name'},sys.name),
+      el('div',{class:'sys-meta'},`(${sys.x}, ${sys.y}) · ${dist} from Sol`)
     ),
-    h('span', {class:'chevron', style:{fontSize:'12px',color:'var(--text3)'}}, isOpen ? '▲':'▼'),
-    delSysBtn
+    el('span',{class:'chevron'},isOpen?'▲':'▼'),
+    delBtn
   );
-  header.addEventListener('click', () => { ui.selectedSys = isOpen ? null : sys.id; ui.addingPlanet = null; ui.addingMoon = null; render(); });
-  card.appendChild(header);
+  hdr.addEventListener('click',()=>{UI.sel=isOpen?null:sys.id;UI.addPlanet=null;UI.addMoon=null;render();});
+  card.appendChild(hdr);
 
-  if (isOpen) {
-    if (ui.editingSys === sys.id) {
-      const sysFormWrapper = h('div', {style:{padding:'8px 14px'}});
-      sysFormWrapper.appendChild(buildSystemForm(sys,
-        data => updateSystem(sys.id, { name: data.name, x: data.x, y: data.y, starColor: data.starColor, notes: data.notes }),
-        () => { ui.editingSys = null; render(); }
-      ));
-      card.appendChild(sysFormWrapper);
-      return card;
-    }
+  if(!isOpen) return card;
 
-    const body = h('div', {class:'sys-body'});
-
-    // Info chips
-    const chips = h('div', {class:'sys-info'});
-    chips.appendChild(h('span', {class:'info-chip'}, sys.starColor + ' star'));
-    chips.appendChild(h('span', {class:'info-chip accent'}, `${dist} units from Sol`));
-    chips.appendChild(h('span', {class:'info-chip'}, `${sys.planets.length} planet${sys.planets.length !== 1?'s':''}`));
-    const totalMoons = sys.planets.reduce((n,p)=>n+p.moons.length, 0);
-    if (totalMoons > 0) chips.appendChild(h('span',{class:'info-chip'}, `${totalMoons} moon${totalMoons !== 1?'s':''}`));
-    const allBodies = [...sys.planets, ...sys.planets.flatMap(p => p.moons)];
-    const maxCargo = Math.max(0, ...allBodies.map(b => b.cargoValue || 0));
-    const bioCount = allBodies.filter(b => b.bioLifeforms).length;
-    if (maxCargo > 0) {
-      const tier = cargoTier(maxCargo);
-      chips.appendChild(h('span', {class:`info-chip badge-cargo-${tier}`}, `best resource: ${maxCargo}/8`));
-    }
-    if (maxCargo >= 6) chips.appendChild(h('span', {class:'info-chip badge-revisit'}, 'revisit'));
-    if (bioCount > 0) chips.appendChild(h('span', {class:'info-chip', style:{background:'var(--success-bg)',color:'var(--success-text)'}}, `bio on ${bioCount} bod${bioCount>1?'ies':'y'}`));
-    body.appendChild(chips);
-
-    if (sys.notes) body.appendChild(h('div',{class:'sys-notes'}, sys.notes));
-    body.appendChild(h('div',{class:'logged-date'}, 'Logged ' + sys.addedAt));
-
-    // Edit system btn
-    const editSysBtn = h('button',{class:'btn-sm',style:{marginBottom:'10px'}},'Edit system info');
-    editSysBtn.addEventListener('click', () => { ui.editingSys = sys.id; render(); });
-    body.appendChild(editSysBtn);
-
-    // Planets
-    sys.planets.forEach((planet, i) => body.appendChild(buildPlanetBlock(planet, i+1, sys)));
-
-    // Add planet form or button
-    if (ui.addingPlanet === sys.id) {
-      body.appendChild(buildBodyForm(
-        null,
-        data => addPlanet(sys.id, data),
-        () => { ui.addingPlanet = null; render(); },
-        'Add Planet'
-      ));
-    } else {
-      const addPlanetBtn = h('button',{class:'btn-full'},'+ Add planet');
-      addPlanetBtn.addEventListener('click', () => { ui.addingPlanet = sys.id; ui.addingMoon = null; render(); });
-      body.appendChild(addPlanetBtn);
-    }
-
-    const divider = h('div',{class:'divider'});
-    const delBtn = h('button',{class:'btn-sm btn-danger'},'Delete system');
-    delBtn.addEventListener('click', () => deleteSystem(sys.id));
-    divider.appendChild(delBtn);
-    body.appendChild(divider);
-
-    card.appendChild(body);
+  if(UI.editSys===sys.id){
+    const wrap=el('div',{style:{padding:'8px 14px'}});
+    wrap.appendChild(sysForm(sys,
+      d=>updateSys(sys.id,d),
+      ()=>{UI.editSys=null;render();}
+    ));
+    card.appendChild(wrap);
+    return card;
   }
+
+  const body=el('div',{class:'sys-body'});
+
+  // Info chips
+  const chips=el('div',{class:'sys-info'});
+  chips.appendChild(el('span',{class:'chip'},sys.starColor+' star'));
+  chips.appendChild(el('span',{class:'chip info'},`${dist} units from Sol`));
+  chips.appendChild(el('span',{class:'chip'},`${sys.planets.length} planet${sys.planets.length!==1?'s':''}`));
+  const totalMoons=sys.planets.reduce((n,p)=>n+(p.moons||[]).length,0);
+  if(totalMoons>0) chips.appendChild(el('span',{class:'chip'},`${totalMoons} moon${totalMoons!==1?'s':''}`));
+  const allBodies=[...sys.planets,...sys.planets.flatMap(p=>p.moons||[])];
+  const maxC=allBodies.reduce((m,b)=>Math.max(m,b.cargoValue||0),0);
+  const bioN=allBodies.filter(b=>b.bioLifeforms).length;
+  if(maxC>0) chips.appendChild(el('span',{class:`chip ${cargoClass(maxC)}`},`best resource: ${maxC}/8`));
+  if(maxC>=6) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
+  if(bioN>0) chips.appendChild(el('span',{class:'chip ok'},`bio on ${bioN} bod${bioN>1?'ies':'y'}`));
+  body.appendChild(chips);
+
+  if(sys.notes) body.appendChild(el('div',{class:'sys-notes'},sys.notes));
+  body.appendChild(el('div',{class:'logged-date'},'Logged '+sys.addedAt));
+
+  const editSysBtn=el('button',{class:'btn-sm',style:{marginBottom:'10px'}},'Edit system info');
+  editSysBtn.addEventListener('click',()=>{UI.editSys=sys.id;render();});
+  body.appendChild(editSysBtn);
+
+  sys.planets.forEach((p,i)=>body.appendChild(planetBlock(p,i+1,sys)));
+
+  if(UI.addPlanet===sys.id){
+    body.appendChild(bodyForm(null,'Add Planet',
+      d=>addPlanet(sys.id,d),
+      ()=>{UI.addPlanet=null;render();}
+    ));
+  } else {
+    const addPBtn=el('button',{class:'btn-full'},'+ Add planet');
+    addPBtn.addEventListener('click',()=>{UI.addPlanet=sys.id;UI.addMoon=null;render();});
+    body.appendChild(addPBtn);
+  }
+
+  const div=el('div',{class:'divider'});
+  const dBtn=el('button',{class:'btn-sm btn-danger'},'Delete system');
+  dBtn.addEventListener('click',()=>delSys(sys.id));
+  div.appendChild(dBtn);
+  body.appendChild(div);
+  card.appendChild(body);
   return card;
 }
 
-// ─── Partial re-render for search (preserves input focus) ─────────
-function renderSystems() {
-  let container = document.getElementById('systems-list');
-  if (!container) { render(); return; }
-  container.innerHTML = '';
-  const filtered = state.systems.filter(s => s.name.toLowerCase().includes(ui.search.toLowerCase()));
-  if (filtered.length === 0) {
-    container.appendChild(h('div',{class:'empty'}, ui.search ? 'No matches.' : 'No systems logged yet.\nTap + to add your first.'));
+// ── Render systems list only (preserves search focus) ────────────
+function renderList(){
+  const container=document.getElementById('sys-list');
+  if(!container){render();return;}
+  container.innerHTML='';
+  const q=UI.search.toLowerCase();
+  const filtered=S.systems.filter(s=>s.name.toLowerCase().includes(q));
+  if(filtered.length===0){
+    container.appendChild(el('div',{class:'empty'},
+      S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
+  } else {
+    filtered.forEach(s=>container.appendChild(sysCard(s)));
   }
-  filtered.forEach(s => container.appendChild(buildSysCard(s)));
-  // update datalist
-  const dl = document.getElementById('star-names');
-  if (dl) { dl.innerHTML = ''; state.systems.forEach(s => dl.appendChild(h('option',{value:s.name}))); }
+  const dl=document.getElementById('star-names');
+  if(dl){dl.innerHTML='';S.systems.forEach(s=>dl.appendChild(el('option',{value:s.name})));}
 }
 
-// ─── Main render ──────────────────────────────────────────────────
-function render() {
-  const app = document.getElementById('app');
-  app.innerHTML = '';
-  const frag = document.createDocumentFragment();
+// ── Full render ───────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const frag=document.createDocumentFragment();
 
-  const filtered = state.systems.filter(s => s.name.toLowerCase().includes(ui.search.toLowerCase()));
-  const totalPlanets = state.systems.reduce((n,s)=>n+s.planets.length,0);
-  const bioSysCount = state.systems.filter(s =>
-    [...s.planets, ...s.planets.flatMap(p => p.moons)].some(b => b.bioLifeforms)
-  ).length;
-  const revisitCount = state.systems.filter(s =>
-    [...s.planets, ...s.planets.flatMap(p => p.moons)].some(b => b.cargoValue >= 6)
-  ).length;
+  const totalP=S.systems.reduce((n,s)=>n+s.planets.length,0);
+  const bioN=S.systems.filter(s=>[...s.planets,...s.planets.flatMap(p=>p.moons||[])].some(b=>b.bioLifeforms)).length;
+  const revN=S.systems.filter(s=>[...s.planets,...s.planets.flatMap(p=>p.moons||[])].some(b=>b.cargoValue>=6)).length;
+  const isLight=document.documentElement.classList.contains('light');
 
   // Header
-  const isLight = document.documentElement.classList.contains('light');
-  frag.appendChild(h('div', {class:'header'},
-    h('div',{}, h('div',{class:'header-title'},'SC2 Explorer'), h('div',{class:'header-sub'},'The Ur-Quan Masters')),
-    h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
-      h('div',{class:'stats'},
+  const themeBtn=el('button',{id:'theme-btn',class:'btn-theme'},isLight?'☀ Light':'☾ Dark');
+  themeBtn.addEventListener('click',toggleTheme);
+  frag.appendChild(el('div',{class:'header'},
+    el('div',{class:'header-left'},el('div',{class:'title'},'SC2 Explorer'),el('div',{class:'sub'},'The Ur-Quan Masters')),
+    el('div',{class:'header-right'},
+      el('div',{class:'stats'},
         ...[
-          [state.systems.length,'systems'],
-          [totalPlanets,'planets'],
-          [bioSysCount,'bio'],
-          [revisitCount,'revisit']
-        ].map(([n,l]) => h('div',{class:'stat'}, h('div',{class:'stat-n'},String(n)), h('div',{class:'stat-l'},l)))
+          [S.systems.length,'systems'],[totalP,'planets'],[bioN,'bio'],[revN,'revisit']
+        ].map(([n,l])=>el('div',{class:'stat'},el('div',{class:'stat-n'},String(n)),el('div',{class:'stat-l'},l)))
       ),
-      h('button',{class:'btn-theme', onclick: toggleTheme}, isLight ? '☀ Light' : '☾ Dark')
+      themeBtn
     )
   ));
 
-  // Autocomplete datalist
-  const datalist = h('datalist', {id:'star-names'});
-  state.systems.forEach(s => datalist.appendChild(h('option', {value: s.name})));
-  frag.appendChild(datalist);
+  // Datalist for autocomplete
+  const dl=el('datalist',{id:'star-names'});
+  S.systems.forEach(s=>dl.appendChild(el('option',{value:s.name})));
+  frag.appendChild(dl);
 
-  // Search — give it an id so we can restore focus after render
-  const searchRow = h('div',{class:'search-row'});
-  const si = h('input',{type:'text', id:'search-input', placeholder:'Search star systems...', value:ui.search, list:'star-names', autocomplete:'off'});
-  si.addEventListener('input', e => { ui.search = e.target.value; renderSystems(); });
-  searchRow.appendChild(si);
-  frag.appendChild(searchRow);
+  // Search input
+  const si=el('input',{type:'text',id:'search-input',placeholder:'Search star systems...',list:'star-names',autocomplete:'off'});
+  si.value=UI.search;
+  si.addEventListener('input',e=>{UI.search=e.target.value;renderList();});
+  frag.appendChild(el('div',{class:'search-row'},si));
 
   // Add system form
-  if (ui.addingSys) {
-    frag.appendChild(buildSystemForm(null, addSystem, () => { ui.addingSys = false; render(); }));
+  if(UI.addSys){
+    frag.appendChild(sysForm(null,addSys,()=>{UI.addSys=false;render();}));
   }
 
-  // Systems list in a stable container
-  const systemsList = h('div', {id:'systems-list'});
-  if (filtered.length === 0 && !ui.addingSys) {
-    systemsList.appendChild(h('div',{class:'empty'}, state.systems.length === 0 ? 'No systems logged yet.\nTap + to add your first.' : 'No matches.'));
+  // Systems container
+  const q=UI.search.toLowerCase();
+  const filtered=S.systems.filter(s=>s.name.toLowerCase().includes(q));
+  const listDiv=el('div',{id:'sys-list'});
+  if(filtered.length===0&&!UI.addSys){
+    listDiv.appendChild(el('div',{class:'empty'},S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
+  } else {
+    filtered.forEach(s=>listDiv.appendChild(sysCard(s)));
   }
-  filtered.forEach(s => systemsList.appendChild(buildSysCard(s)));
-  frag.appendChild(systemsList);
+  frag.appendChild(listDiv);
 
   // Map toggle
-  const mapToggle = h('div',{class:'map-toggle'},
-    h('span',{},ui.mapOpen?'▲':'▼'),
-    h('span',{},`Star map (${state.systems.length} logged)`)
-  );
-  mapToggle.addEventListener('click', () => { ui.mapOpen = !ui.mapOpen; render(); });
+  const mapToggle=el('div',{class:'map-toggle'},el('span',{},UI.map?'▲':'▼'),el('span',{},`Star map (${S.systems.length} logged)`));
+  mapToggle.addEventListener('click',()=>{UI.map=!UI.map;render();});
   frag.appendChild(mapToggle);
-  if (ui.mapOpen) {
-    const canvas = h('canvas',{id:'starmap',height:'280'});
-    frag.appendChild(canvas);
-    frag.appendChild(h('div',{class:'map-legend'}, `Teal = logged · Amber = selected · Sol at (${SOL_X}, ${SOL_Y}) · Y-axis inverted`));
+  if(UI.map){
+    const cv=el('canvas',{id:'starmap',height:'280'});
+    frag.appendChild(cv);
+    frag.appendChild(el('div',{class:'map-legend'},`Teal = logged · Amber = selected · Sol (${SOL_X}, ${SOL_Y}) · Y-axis inverted`));
   }
 
-  // Export/Import
-  const exportRow = h('div',{class:'export-row'});
-  const expBtn = h('button',{class:'btn-sm'},'Export JSON');
-  expBtn.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='sc2-log.json'; a.click();
-    URL.revokeObjectURL(url); toast('Exported!');
+  // Export / Import
+  const expBtn=el('button',{class:'btn-sm'},'Export JSON');
+  expBtn.addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='sc2-log.json';a.click();
+    URL.revokeObjectURL(url);toast('Exported!');
   });
-  const impLabel = h('label',{class:'btn-sm', style:{cursor:'pointer', border:'0.5px solid var(--border2)', borderRadius:'var(--rs)', padding:'7px 13px', display:'inline-block'}}, 'Import JSON');
-  const impInput = h('input',{type:'file', accept:'.json', style:{display:'none'}});
-  impInput.addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = ev => {
-      try { const p = JSON.parse(ev.target.result); if (p.systems) { state = p; save(); render(); toast('Imported!'); } else toast('Invalid file'); }
-      catch { toast('Could not parse'); }
-      impInput.value = '';
+  const impLbl=el('label',{class:'btn-sm',style:{cursor:'pointer',border:'.5px solid var(--bdr2)',borderRadius:'var(--rs)',padding:'7px 13px',display:'inline-block'}},'Import JSON');
+  const impInp=el('input',{type:'file',accept:'.json',style:{display:'none'}});
+  impInp.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{const p=JSON.parse(ev.target.result);if(p.systems){S=p;persist();render();toast('Imported!');}else toast('Invalid file');}
+      catch(e){toast('Could not parse');}
+      impInp.value='';
     };
     r.readAsText(f);
   });
-  impLabel.appendChild(impInput);
-  exportRow.appendChild(expBtn);
-  exportRow.appendChild(impLabel);
-  frag.appendChild(exportRow);
+  impLbl.appendChild(impInp);
+  frag.appendChild(el('div',{class:'export-row'},expBtn,impLbl));
 
   // FAB
-  if (!ui.addingSys) {
-    const fab = h('button',{class:'fab', 'aria-label':'Add star system'},'+');
-    fab.addEventListener('click', () => { ui.addingSys = true; ui.selectedSys = null; render(); window.scrollTo({top:0,behavior:'smooth'}); });
+  if(!UI.addSys){
+    const fab=el('button',{class:'fab','aria-label':'Add star system'},'+');
+    fab.addEventListener('click',()=>{UI.addSys=true;UI.sel=null;render();window.scrollTo({top:0,behavior:'smooth'});});
     frag.appendChild(fab);
   }
 
   app.appendChild(frag);
-  // Restore search focus if it was active before render
-  if (document.activeElement?.id === 'search-input' || ui._searchWasFocused) {
-    const newSi = document.getElementById('search-input');
-    if (newSi) { newSi.focus(); newSi.setSelectionRange(ui._searchCursor||0, ui._searchCursor||0); }
-    ui._searchWasFocused = false;
-  }
   drawMap();
 }
 
-// ─── Star Map ─────────────────────────────────────────────────────
-function drawMap() {
-  const canvas = document.getElementById('starmap');
-  if (!canvas) return;
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.offsetWidth || 320;
-  canvas.width = w * dpr; canvas.height = w * dpr;
-  canvas.style.height = w + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  const size = w, pad = 20, inner = size - pad * 2;
-  const toP = v => pad + (v / 1000) * inner;
-  const dark = !document.documentElement.classList.contains('light');
-  const gridC = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const lblC = dark ? '#636366' : '#aaa';
-
-  ctx.strokeStyle = gridC; ctx.lineWidth = 0.5;
-  [250,500,750].forEach(v => {
-    ctx.beginPath(); ctx.moveTo(pad,toP(v)); ctx.lineTo(size-pad,toP(v)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(toP(v),pad); ctx.lineTo(toP(v),size-pad); ctx.stroke();
+// ── Star Map ──────────────────────────────────────────────────────
+function drawMap(){
+  const cv=document.getElementById('starmap');
+  if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.offsetWidth||320;
+  cv.width=w*dpr;cv.height=w*dpr;cv.style.height=w+'px';
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad=20,inner=w-pad*2;
+  const px=v=>pad+(v/1000)*inner;
+  const dark=!document.documentElement.classList.contains('light');
+  const gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
+  const lc=dark?'#636366':'#aaa';
+  ctx.strokeStyle=gc;ctx.lineWidth=.5;
+  [250,500,750].forEach(v=>{
+    ctx.beginPath();ctx.moveTo(pad,px(v));ctx.lineTo(w-pad,px(v));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px(v),pad);ctx.lineTo(px(v),w-pad);ctx.stroke();
   });
-
-  // Draw Sol
-  const sx = toP(SOL_X), sy = toP(1000 - SOL_Y);
-  ctx.beginPath(); ctx.arc(sx,sy,4,0,Math.PI*2);
-  ctx.fillStyle = '#EF9F27'; ctx.globalAlpha=0.4; ctx.fill(); ctx.globalAlpha=1;
-  ctx.fillStyle = lblC; ctx.font='9px monospace'; ctx.fillText('Sol', sx+7, sy+3);
-
-  state.systems.forEach(sys => {
-    const cx = toP(sys.x), cy = toP(1000 - sys.y);
-    const sel = sys.id === ui.selectedSys;
-    ctx.beginPath(); ctx.arc(cx,cy,sel?7:4,0,Math.PI*2);
-    ctx.fillStyle = sel ? '#EF9F27' : '#5DCAA5'; ctx.globalAlpha=0.9; ctx.fill(); ctx.globalAlpha=1;
-    if (sel) {
-      ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2);
-      ctx.strokeStyle='#EF9F27'; ctx.lineWidth=1; ctx.globalAlpha=0.5; ctx.stroke(); ctx.globalAlpha=1;
-    }
-    ctx.fillStyle=lblC; ctx.font='9px monospace'; ctx.fillText(sys.name, cx+10, cy+4);
+  // Sol
+  const sx=px(SOL_X),sy=px(1000-SOL_Y);
+  ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);
+  ctx.fillStyle='#EF9F27';ctx.globalAlpha=.4;ctx.fill();ctx.globalAlpha=1;
+  ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText('Sol',sx+7,sy+3);
+  // Systems
+  S.systems.forEach(s=>{
+    const cx=px(s.x),cy=px(1000-s.y),sel=s.id===UI.sel;
+    ctx.beginPath();ctx.arc(cx,cy,sel?7:4,0,Math.PI*2);
+    ctx.fillStyle=sel?'#EF9F27':'#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
+    if(sel){ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.strokeStyle='#EF9F27';ctx.lineWidth=1;ctx.globalAlpha=.5;ctx.stroke();ctx.globalAlpha=1;}
+    ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText(s.name,cx+10,cy+4);
   });
-  ctx.fillStyle=lblC; ctx.font='9px monospace';
-  ctx.fillText('0,0', pad, size-4); ctx.fillText('1000', size-36, size-4);
+  ctx.fillStyle=lc;ctx.font='9px monospace';
+  ctx.fillText('0,0',pad,w-4);ctx.fillText('1000',w-36,w-4);
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────
 load();
 initTheme();
 render();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body>
 </html>
