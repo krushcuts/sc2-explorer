@@ -64,8 +64,12 @@ button:active{background:var(--bg3);transform:scale(.97)}
 .stat-n{font-size:17px;font-weight:600;font-family:monospace;line-height:1.1}
 .stat-l{font-size:10px;color:var(--text2)}
 
-.search-row{display:flex;gap:8px;margin-bottom:12px}
+.search-row{position:relative;display:flex;gap:8px;margin-bottom:12px}
 .search-row input{flex:1}
+.ac-drop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:.5px solid var(--bdr2);border-radius:var(--rs);z-index:50;overflow:hidden}
+.ac-item{padding:11px 14px;font-size:15px;cursor:pointer;border-bottom:.5px solid var(--bdr);color:var(--text)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:active,.ac-item.hover{background:var(--bg3)}
 
 .sys-card{border:.5px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
 .sys-card.open{border-color:var(--bdr2)}
@@ -476,7 +480,7 @@ function planetBlock(planet,num,sys){
 function sysCard(sys){
   const isOpen=UI.sel===sys.id;
   const dist=distSol(sys.x,sys.y);
-  const card=el('div',{class:'sys-card'+(isOpen?' open':'')});
+  const card=el('div',{class:'sys-card'+(isOpen?' open':''),'data-sys':sys.id});
 
   const delBtn=el('button',{class:'btn-del'},'✕');
   delBtn.addEventListener('click',e=>{e.stopPropagation();delSys(sys.id);});
@@ -563,8 +567,32 @@ function renderList(){
   } else {
     filtered.forEach(s=>container.appendChild(sysCard(s)));
   }
-  const dl=document.getElementById('star-names');
-  if(dl){dl.innerHTML='';S.systems.forEach(s=>dl.appendChild(el('option',{value:s.name})));}
+}
+
+function updateAC(query){
+  // remove existing dropdown
+  const existing=document.getElementById('ac-drop');
+  if(existing) existing.remove();
+  if(!query||!query.trim()) return;
+  const q=query.toLowerCase();
+  const matches=S.systems.filter(s=>s.name.toLowerCase().includes(q)&&s.name.toLowerCase()!==q).slice(0,6);
+  if(matches.length===0) return;
+  const wrap=document.querySelector('.search-row');
+  if(!wrap) return;
+  const drop=el('div',{id:'ac-drop',class:'ac-drop'});
+  matches.forEach(s=>{
+    const item=el('div',{class:'ac-item'},s.name);
+    item.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      UI.search=s.name;
+      const inp=document.getElementById('search-input');
+      if(inp){inp.value=s.name;inp.focus();}
+      drop.remove();
+      renderList();
+    });
+    drop.appendChild(item);
+  });
+  wrap.appendChild(drop);
 }
 
 // ── Full render ───────────────────────────────────────────────────
@@ -593,16 +621,21 @@ function render(){
     )
   ));
 
-  // Datalist for autocomplete
-  const dl=el('datalist',{id:'star-names'});
-  S.systems.forEach(s=>dl.appendChild(el('option',{value:s.name})));
-  frag.appendChild(dl);
-
-  // Search input
-  const si=el('input',{type:'text',id:'search-input',placeholder:'Search star systems...',list:'star-names',autocomplete:'off'});
+  // Search input with custom autocomplete
+  const searchWrap=el('div',{class:'search-row'});
+  const si=el('input',{type:'text',id:'search-input',placeholder:'Search star systems...',autocomplete:'off'});
   si.value=UI.search;
-  si.addEventListener('input',e=>{UI.search=e.target.value;renderList();});
-  frag.appendChild(el('div',{class:'search-row'},si));
+  si.addEventListener('input',e=>{
+    UI.search=e.target.value;
+    renderList();
+    updateAC(e.target.value);
+  });
+  si.addEventListener('blur',()=>setTimeout(()=>{
+    const ac=document.getElementById('ac-drop');
+    if(ac) ac.remove();
+  },150));
+  searchWrap.appendChild(si);
+  frag.appendChild(searchWrap);
 
   // Add system form
   if(UI.addSys){
@@ -683,12 +716,10 @@ function drawMap(){
     ctx.beginPath();ctx.moveTo(pad,px(v));ctx.lineTo(w-pad,px(v));ctx.stroke();
     ctx.beginPath();ctx.moveTo(px(v),pad);ctx.lineTo(px(v),w-pad);ctx.stroke();
   });
-  // Sol
   const sx=px(SOL_X),sy=px(1000-SOL_Y);
   ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);
   ctx.fillStyle='#EF9F27';ctx.globalAlpha=.4;ctx.fill();ctx.globalAlpha=1;
   ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText('Sol',sx+7,sy+3);
-  // Systems
   S.systems.forEach(s=>{
     const cx=px(s.x),cy=px(1000-s.y),sel=s.id===UI.sel;
     ctx.beginPath();ctx.arc(cx,cy,sel?7:4,0,Math.PI*2);
@@ -698,6 +729,30 @@ function drawMap(){
   });
   ctx.fillStyle=lc;ctx.font='9px monospace';
   ctx.fillText('0,0',pad,w-4);ctx.fillText('1000',w-36,w-4);
+
+  // Click to select system
+  cv.onclick=function(e){
+    const rect=cv.getBoundingClientRect();
+    const scaleX=w/rect.width;
+    const mx=(e.clientX-rect.left)*scaleX;
+    const my=(e.clientY-rect.top)*scaleX;
+    let hit=null,best=18;
+    S.systems.forEach(s=>{
+      const cx=px(s.x),cy=px(1000-s.y);
+      const d=Math.sqrt((mx-cx)*(mx-cx)+(my-cy)*(my-cy));
+      if(d<best){best=d;hit=s;}
+    });
+    if(hit){
+      UI.sel=UI.sel===hit.id?null:hit.id;
+      UI.addPlanet=null;UI.addMoon=null;
+      render();
+      // scroll to card and close map
+      setTimeout(function(){
+        const card=document.querySelector('[data-sys="'+hit.id+'"]');
+        if(card) card.scrollIntoView({behavior:'smooth',block:'start'});
+      },60);
+    }
+  };
 }
 
 // ── Boot ──────────────────────────────────────────────────────────
