@@ -13,26 +13,26 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
-  --text: #1a1a1a; --text2: #666660; --text3: #999993;
-  --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
+  --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+  --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
+  --border: rgba(255,255,255,0.11); --border2: rgba(255,255,255,0.24);
   --accent: #EF9F27; --teal: #5DCAA5;
-  --info-bg: #e6f1fb; --info-text: #0c447c;
-  --success-bg: #eaf3de; --success-text: #27500a;
-  --warn-bg: #faeeda; --warn-text: #633806;
-  --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
+  --info-bg: #0c2a47; --info-text: #85b7eb;
+  --success-bg: #173404; --success-text: #97c459;
+  --warn-bg: #412402; --warn-text: #fac775;
+  --danger-bg: #2d1010; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.35);
   --r: 10px; --rs: 6px;
   --sol-x: 175.2; --sol-y: 145.0;
 }
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
-    --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
-    --border: rgba(255,255,255,0.11); --border2: rgba(255,255,255,0.24);
-    --info-bg: #0c2a47; --info-text: #85b7eb;
-    --success-bg: #173404; --success-text: #97c459;
-    --warn-bg: #412402; --warn-text: #fac775;
-    --danger-bg: #2d1010; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.35);
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
+    --text: #1a1a1a; --text2: #666660; --text3: #999993;
+    --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
+    --info-bg: #e6f1fb; --info-text: #0c447c;
+    --success-bg: #eaf3de; --success-text: #27500a;
+    --warn-bg: #faeeda; --warn-text: #633806;
+    --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
   }
 }
 
@@ -168,8 +168,9 @@ canvas { display: block; width: 100%; border-radius: var(--rs); border: 0.5px so
 .cargo-pip.low  { background: var(--text3); }
 .cargo-pip.mid  { background: var(--accent); }
 .cargo-pip.high { background: var(--teal); }
-
-</style>
+.btn-del-inline { font-size: 14px; padding: 4px 9px; color: var(--danger-text); border-color: transparent; background: transparent; border-radius: var(--rs); flex-shrink: 0; line-height: 1; min-width: 32px; }
+.btn-del-inline:active { background: var(--danger-bg); }
+.export-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 0.5px solid var(--border); margin-top: 16px; }
 </head>
 <body>
 <div id="app"></div>
@@ -396,7 +397,7 @@ function buildMoonRow(moon, moonNum, sysId, planetId) {
     return frag;
   }
 
-  const row = h('div', {class:'moon-row'}, 
+  const row = h('div', {class:'moon-row'},
     h('span', {class:'moon-num'}, `Moon ${moonNum}`),
     h('span', {class:'moon-type'}, moon.type),
     moon.weather > 0 ? h('span', {class:'pstat warn'}, `W${moon.weather}`) : null,
@@ -404,8 +405,14 @@ function buildMoonRow(moon, moonNum, sysId, planetId) {
     moon.cargoValue > 0 ? h('span', {class:`pstat badge-cargo-${cargoTier(moon.cargoValue)}`}, `C${moon.cargoValue}`) : null,
     moon.cargoValue >= 6 ? h('span', {class:'badge-revisit'}, 'revisit') : null,
     moon.bioLifeforms ? h('span', {class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio') : null,
-    h('span', {class:'chevron', style:{color:'var(--text3)', fontSize:'11px'}}, isOpen ? '▲':'▼')
+    h('span', {class:'chevron', style:{color:'var(--text3)', fontSize:'11px', marginLeft:'auto'}}, isOpen ? '▲':'▼')
   );
+  const delMoonBtn = h('button', {class:'btn-del-inline', title:'Delete moon'}, '✕');
+  delMoonBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`Delete Moon ${moonNum} (${moon.type})?`)) deleteMoon(sysId, planetId, moon.id);
+  });
+  row.appendChild(delMoonBtn);
   row.addEventListener('click', () => { ui.openMoons[key] = !isOpen; render(); });
   frag.appendChild(row);
 
@@ -462,15 +469,22 @@ function buildPlanetBlock(planet, planetNum, sys) {
     const tier = cargoTier(planet.cargoValue);
     stats.appendChild(h('span',{class:`pstat cargo badge-cargo-${tier}`}, `C${planet.cargoValue}`));
     if (planet.cargoValue >= 6) stats.appendChild(h('span',{class:'badge-revisit'}, 'revisit'));
-  if (planet.bioLifeforms) stats.appendChild(h('span',{class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio'));
   }
+  if (planet.bioLifeforms) stats.appendChild(h('span',{class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio'));
+
+  const delPlanetBtn = h('button', {class:'btn-del-inline', title:'Delete planet'}, '✕');
+  delPlanetBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`Delete Planet ${planetNum} (${planet.type})?`)) deletePlanet(sys.id, planet.id);
+  });
 
   const header = h('div', {class:'planet-header'},
     h('span', {class:'planet-num'}, `Planet ${planetNum}`),
     h('span', {class:'planet-type'}, planet.type),
     stats,
     planet.moons.length > 0 ? h('span',{class:'pstat',style:{marginLeft:'2px'}},`${planet.moons.length}☽`) : null,
-    h('span', {class:'chevron',style:{fontSize:'11px',color:'var(--text3)',marginLeft:'4px'}}, isOpen?'▲':'▼')
+    h('span', {class:'chevron',style:{fontSize:'11px',color:'var(--text3)',marginLeft:'4px'}}, isOpen?'▲':'▼'),
+    delPlanetBtn
   );
   header.addEventListener('click', () => { ui.openPlanets[planet.id] = !isOpen; render(); });
   block.appendChild(header);
@@ -531,12 +545,19 @@ function buildSysCard(sys) {
   const dist = distFromSol(sys.x, sys.y);
   const card = h('div', {class: isOpen ? 'sys-card open' : 'sys-card'});
 
+  const delSysBtn = h('button', {class:'btn-del-inline', title:'Delete system'}, '✕');
+  delSysBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteSystem(sys.id);
+  });
+
   const header = h('div', {class:'sys-header'},
     h('div', {style:{flex:'1'}},
       h('div', {class:'sys-name'}, sys.name),
       h('div', {class:'sys-meta'}, `(${sys.x}, ${sys.y}) · ${dist} from Sol`)
     ),
-    h('span', {class:'chevron', style:{fontSize:'12px',color:'var(--text3)'}}, isOpen ? '▲':'▼')
+    h('span', {class:'chevron', style:{fontSize:'12px',color:'var(--text3)'}}, isOpen ? '▲':'▼'),
+    delSysBtn
   );
   header.addEventListener('click', () => { ui.selectedSys = isOpen ? null : sys.id; ui.addingPlanet = null; ui.addingMoon = null; render(); });
   card.appendChild(header);
@@ -717,7 +738,7 @@ function drawMap() {
   ctx.scale(dpr, dpr);
   const size = w, pad = 20, inner = size - pad * 2;
   const toP = v => pad + (v / 1000) * inner;
-  const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const dark = !window.matchMedia('(prefers-color-scheme: light)').matches;
   const gridC = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const lblC = dark ? '#636366' : '#aaa';
 
