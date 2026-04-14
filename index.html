@@ -250,7 +250,10 @@ function delSys(id){
 function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:'',moons:[]}}
 function addPlanet(sysId,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
-  s.planets.push({...bodyDefaults(),...d,id:uid(),moons:[]}); persist(); UI.addPlanet=null; render();
+  const moonData=d._moon; delete d._moon;
+  const planet={...bodyDefaults(),...d,id:uid(),moons:[]};
+  if(moonData) planet.moons.push({...bodyDefaults(),...moonData,id:uid()});
+  s.planets.push(planet); persist(); UI.addPlanet=null; render();
 }
 function updatePlanet(sysId,pid,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
@@ -285,36 +288,62 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   const d={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:'',...existing};
   const box=el('div',{class:'form-box'},el('div',{class:'form-title'},title));
 
-  // Order number
   const orderLabel=bodyKind==='moon'?'Moon position (1 = closest to planet)':'Planet position (1 = closest to star)';
-  const orderInp=mkInp('number',d.order||'',v=>d.order=+v||0,{inputmode:'numeric',min:'0',placeholder:'1, 2, 3...'});
-  box.appendChild(field(orderLabel,orderInp));
-
-  box.appendChild(field('Body type', mkSel(PLANET_TYPES,null,d.type,v=>d.type=v)));
+  box.appendChild(field(orderLabel,mkInp('number',d.order||'',v=>d.order=+v||0,{inputmode:'numeric',min:'0',placeholder:'1, 2, 3...'})));
+  box.appendChild(field('Body type',mkSel(PLANET_TYPES,null,d.type,v=>d.type=v)));
 
   box.appendChild(el('div',{class:'section-sep'},'Hazards'));
   const g=el('div',{class:'g3'});
   g.appendChild(el('div',{},el('label',{},'Weather (0–8)'),mkSel(HAZ,null,d.weather,v=>d.weather=+v)));
   g.appendChild(el('div',{},el('label',{},'Tectonics (0–8)'),mkSel(HAZ,null,d.tectonics,v=>d.tectonics=+v)));
-  const tempInp=mkInp('text',d.temperature,v=>d.temperature=v,{placeholder:'-400 to 4000...',inputmode:'decimal'});
+  const tempInp=mkInp('number',d.temperature,v=>d.temperature=v,{});
   g.appendChild(el('div',{},el('label',{},'Temperature'),tempInp));
   box.appendChild(g);
 
   box.appendChild(el('div',{class:'section-sep'},'Resources'));
-  const cargoSel=mkSel(CARGO_OPTS,CARGO_LBL,d.cargoValue,v=>d.cargoValue=+v);
-  box.appendChild(field('Max resource value',cargoSel));
+  box.appendChild(field('Max resource value',mkSel(CARGO_OPTS,CARGO_LBL,d.cargoValue,v=>d.cargoValue=+v)));
 
   box.appendChild(el('div',{class:'section-sep'},'Biology'));
-  const bioSel=mkSel(['No','Yes'],null,d.bioLifeforms?'Yes':'No',v=>d.bioLifeforms=v==='Yes');
-  box.appendChild(field('Biological lifeforms present',bioSel));
+  box.appendChild(field('Biological lifeforms present',mkSel(['No','Yes'],null,d.bioLifeforms?'Yes':'No',v=>d.bioLifeforms=v==='Yes')));
 
   const notesTA=el('textarea',{rows:'2',placeholder:'Notes...'});
   notesTA.value=d.notes;
   notesTA.addEventListener('input',e=>d.notes=e.target.value);
   box.appendChild(field('Notes',notesTA));
 
+  // Optional inline moon (planet form only)
+  let moonData=null;
+  if(bodyKind==='planet'){
+    const m={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:''};
+    const moonSec=el('div',{style:{display:'none',borderTop:'.5px solid var(--bdr)',paddingTop:'10px',marginTop:'4px'}});
+    moonSec.appendChild(field('Moon position (1 = closest to planet)',mkInp('number',m.order||'',v=>m.order=+v||0,{inputmode:'numeric',min:'0',placeholder:'1, 2, 3...'})));
+    moonSec.appendChild(field('Moon type',mkSel(PLANET_TYPES,null,m.type,v=>m.type=v)));
+    const mg=el('div',{class:'g3'});
+    mg.appendChild(el('div',{},el('label',{},'Weather (0–8)'),mkSel(HAZ,null,m.weather,v=>m.weather=+v)));
+    mg.appendChild(el('div',{},el('label',{},'Tectonics (0–8)'),mkSel(HAZ,null,m.tectonics,v=>m.tectonics=+v)));
+    const mTempInp=mkInp('number',m.temperature,v=>m.temperature=v,{});
+    mg.appendChild(el('div',{},el('label',{},'Temperature'),mTempInp));
+    moonSec.appendChild(mg);
+    moonSec.appendChild(field('Max resource value',mkSel(CARGO_OPTS,CARGO_LBL,m.cargoValue,v=>m.cargoValue=+v)));
+    moonSec.appendChild(field('Bio lifeforms',mkSel(['No','Yes'],null,'No',v=>m.bioLifeforms=v==='Yes')));
+    const mNotes=el('textarea',{rows:'2',placeholder:'Moon notes...'});
+    mNotes.addEventListener('input',e=>m.notes=e.target.value);
+    moonSec.appendChild(field('Moon notes',mNotes));
+
+    const moonToggle=el('div',{class:'section-sep',style:{cursor:'pointer',userSelect:'none',color:'var(--teal)'}},'+ Log a moon for this planet (optional)');
+    let moonOpen=false;
+    moonToggle.addEventListener('click',()=>{
+      moonOpen=!moonOpen;
+      moonSec.style.display=moonOpen?'block':'none';
+      moonToggle.textContent=moonOpen?'- Moon data (tap to collapse)':'+ Log a moon for this planet (optional)';
+      moonData=moonOpen?m:null;
+    });
+    box.appendChild(moonToggle);
+    box.appendChild(moonSec);
+  }
+
   const saveBtn=el('button',{class:'btn-primary'},existing?'Save changes':'Save');
-  saveBtn.addEventListener('click',()=>onSave(d));
+  saveBtn.addEventListener('click',()=>{if(moonData) d._moon=moonData; onSave(d);});
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
