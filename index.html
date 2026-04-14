@@ -22,18 +22,15 @@
   --warn-bg: #412402; --warn-text: #fac775;
   --danger-bg: #2d1010; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.35);
   --r: 10px; --rs: 6px;
-  --sol-x: 175.2; --sol-y: 145.0;
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
-    --text: #1a1a1a; --text2: #666660; --text3: #999993;
-    --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
-    --info-bg: #e6f1fb; --info-text: #0c447c;
-    --success-bg: #eaf3de; --success-text: #27500a;
-    --warn-bg: #faeeda; --warn-text: #633806;
-    --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
-  }
+html.light {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
+  --text: #1a1a1a; --text2: #666660; --text3: #999993;
+  --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
+  --info-bg: #e6f1fb; --info-text: #0c447c;
+  --success-bg: #eaf3de; --success-text: #27500a;
+  --warn-bg: #faeeda; --warn-text: #633806;
+  --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
 }
 
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; -webkit-tap-highlight-color: transparent; }
@@ -170,6 +167,8 @@ canvas { display: block; width: 100%; border-radius: var(--rs); border: 0.5px so
 .cargo-pip.high { background: var(--teal); }
 .btn-del-inline { font-size: 14px; padding: 4px 9px; color: var(--danger-text); border-color: transparent; background: transparent; border-radius: var(--rs); flex-shrink: 0; line-height: 1; min-width: 32px; }
 .btn-del-inline:active { background: var(--danger-bg); }
+.btn-theme { font-size: 13px; padding: 5px 11px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; flex-shrink: 0; }
+.btn-theme:active { background: var(--bg3); }
 .export-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 0.5px solid var(--border); margin-top: 16px; }
 </head>
 <body>
@@ -177,13 +176,24 @@ canvas { display: block; width: 100%; border-radius: var(--rs); border: 0.5px so
 <div class="toast" id="toast"></div>
 <script>
 // ─── Constants ────────────────────────────────────────────────────
-const SOL_X = 175.2, SOL_Y = 145.0; // SC2 map coordinates of Sol
+const SOL_X = 175.2, SOL_Y = 145.0;
 const PLANET_TYPES = ["Telluric","Water World","Gas Giant","Icy","Airless Rock","Acid","Alkali","Reducing","Radioactive","Treasure","Shattered","Carbon","Unknown"];
 const STAR_COLORS  = ["Yellow","Blue","Orange","Red","White","Brown Dwarf","Binary","Unknown"];
 const HAZ_RANGE    = [0,1,2,3,4,5];
 const CARGO_RANGE  = [0,1,2,3,4,5,6,7,8];
 const CARGO_LABELS = ['— (unsurveyed)','1 – Ignore','2 – Skip','3 – Low','4 – Moderate','5 – Decent','6 – Good ✦','7 – High ✦✦','8 – Excellent ✦✦✦'];
 const STORAGE_KEY  = 'sc2-explorer-v2';
+
+// ─── Theme ────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('sc2-theme') || 'dark';
+  document.documentElement.classList.toggle('light', saved === 'light');
+}
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('sc2-theme', isLight ? 'light' : 'dark');
+  drawMap();
+}
 
 // ─── State ────────────────────────────────────────────────────────
 let state = { systems: [] };
@@ -738,7 +748,7 @@ function drawMap() {
   ctx.scale(dpr, dpr);
   const size = w, pad = 20, inner = size - pad * 2;
   const toP = v => pad + (v / 1000) * inner;
-  const dark = !window.matchMedia('(prefers-color-scheme: light)').matches;
+  const dark = !document.documentElement.classList.contains('light');
   const gridC = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const lblC = dark ? '#636366' : '#aaa';
 
