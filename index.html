@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SC2 Explorer">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="manifest.json">
+<title>SC2 Explorer</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #e8e8e4;
+  --text: #1a1a1a; --text2: #666660; --text3: #999993;
+  --border: rgba(0,0,0,0.11); --border2: rgba(0,0,0,0.22);
+  --accent: #EF9F27; --teal: #5DCAA5;
+  --info-bg: #e6f1fb; --info-text: #0c447c;
+  --success-bg: #eaf3de; --success-text: #27500a;
+  --warn-bg: #faeeda; --warn-text: #633806;
+  --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.35);
+  --r: 10px; --rs: 6px;
+  --sol-x: 175.2; --sol-y: 145.0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+    --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
+    --border: rgba(255,255,255,0.11); --border2: rgba(255,255,255,0.24);
+    --info-bg: #0c2a47; --info-text: #85b7eb;
+    --success-bg: #173404; --success-text: #97c459;
+    --warn-bg: #412402; --warn-text: #fac775;
+    --danger-bg: #2d1010; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.35);
+  }
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; -webkit-tap-highlight-color: transparent; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+#app { max-width: 700px; margin: 0 auto; padding: 16px 16px 100px; }
+
+input, select, textarea {
+  font-size: 16px; padding: 10px 12px; width: 100%;
+  background: var(--bg); color: var(--text);
+  border: 0.5px solid var(--border2); border-radius: var(--rs);
+  outline: none; font-family: inherit; appearance: none; -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; line-height: 1.5; }
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+button {
+  font-size: 14px; padding: 10px 16px; cursor: pointer;
+  background: var(--bg); color: var(--text);
+  border: 0.5px solid var(--border2); border-radius: var(--rs);
+  font-family: inherit; transition: background 0.1s, transform 0.08s;
+  white-space: nowrap;
+}
+button:active { background: var(--bg3); transform: scale(0.97); }
+.btn-primary { font-weight: 600; }
+.btn-danger { color: var(--danger-text); border-color: var(--danger-border); }
+.btn-sm { font-size: 13px; padding: 7px 13px; }
+.btn-full { width: 100%; margin-bottom: 8px; }
+
+/* Header */
+.header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
+.header-title { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Fira Mono', monospace; letter-spacing: -0.5px; }
+.header-sub { font-size: 11px; color: var(--text3); font-family: monospace; }
+.stats { display: flex; gap: 14px; flex-shrink: 0; }
+.stat { text-align: center; }
+.stat-n { font-size: 18px; font-weight: 600; font-family: monospace; line-height: 1.1; }
+.stat-l { font-size: 10px; color: var(--text2); }
+
+/* Search */
+.search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-row input { flex: 1; }
+
+/* System card */
+.sys-card { border: 0.5px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 8px; }
+.sys-card.open { border-color: var(--border2); }
+.sys-header { display: flex; align-items: center; gap: 8px; padding: 14px; cursor: pointer; }
+.sys-card.open .sys-header { background: var(--bg2); }
+.sys-name { font-family: monospace; font-size: 15px; font-weight: 700; flex: 1; }
+.sys-meta { font-size: 11px; color: var(--text2); font-family: monospace; }
+.sys-body { padding: 8px 14px 14px; }
+
+/* Sys info row */
+.sys-info { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.info-chip { font-size: 12px; padding: 3px 9px; border-radius: 20px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); white-space: nowrap; }
+.info-chip.accent { background: var(--warn-bg); color: var(--warn-text); }
+.info-chip.teal { background: var(--success-bg); color: var(--success-text); }
+
+/* Planet block */
+.planet-block { border: 0.5px solid var(--border); border-radius: var(--rs); margin-bottom: 8px; overflow: hidden; }
+.planet-header { display: flex; align-items: center; gap: 8px; padding: 11px 12px; cursor: pointer; background: var(--bg2); }
+.planet-header:active { background: var(--bg3); }
+.planet-num { font-size: 12px; font-weight: 700; font-family: monospace; background: var(--bg3); color: var(--text2); padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+.planet-type { font-size: 13px; flex: 1; }
+.planet-stats { display: flex; gap: 5px; }
+.pstat { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg3); color: var(--text2); font-family: monospace; }
+.pstat.warn { background: var(--warn-bg); color: var(--warn-text); }
+.pstat.cargo { background: var(--info-bg); color: var(--info-text); }
+
+.planet-body { padding: 10px 12px 12px; }
+.planet-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 10px; font-size: 13px; }
+.detail-item { display: flex; justify-content: space-between; }
+.detail-label { color: var(--text2); }
+.detail-value { font-weight: 500; font-family: monospace; }
+
+/* Moon block */
+.moon-section { margin-top: 8px; border-top: 0.5px solid var(--border); padding-top: 8px; }
+.moon-section-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.moon-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--rs); margin-bottom: 5px; cursor: pointer; }
+.moon-row:active { background: var(--bg2); }
+.moon-num { font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text3); min-width: 48px; }
+.moon-type { font-size: 12px; flex: 1; }
+.moon-detail { padding: 8px 10px; border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 var(--rs) var(--rs); margin-top: -5px; margin-bottom: 5px; background: var(--bg2); }
+
+/* Hazard display */
+.haz-row { display: flex; gap: 4px; }
+.haz-pip { width: 10px; height: 10px; border-radius: 2px; background: var(--border2); }
+.haz-pip.on { background: var(--accent); }
+.haz-pip.danger { background: var(--danger-text); }
+
+/* Form */
+.form-box { background: var(--bg2); border-radius: var(--r); padding: 16px; border: 0.5px solid var(--border2); margin-bottom: 10px; }
+.form-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+.form-field { margin-bottom: 10px; }
+.form-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+@media (max-width: 400px) {
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+  .form-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+.form-btns { display: flex; gap: 8px; margin-top: 12px; }
+.form-btns .btn-primary { flex: 1; }
+.form-section-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+
+/* Map */
+.map-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); cursor: pointer; padding: 10px 0; border-top: 0.5px solid var(--border); user-select: none; }
+canvas { display: block; width: 100%; border-radius: var(--rs); border: 0.5px solid var(--border); background: var(--bg2); }
+.map-legend { font-size: 10px; color: var(--text3); font-family: monospace; margin-top: 5px; line-height: 1.7; }
+
+/* FAB */
+.fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 28px; line-height: 1; display: flex; align-items: center; justify-content: center; border: none; box-shadow: 0 3px 14px rgba(0,0,0,0.22); cursor: pointer; z-index: 100; transition: transform 0.12s; }
+.fab:active { transform: scale(0.92); }
+.fab.hidden { display: none; }
+
+/* Toast */
+.toast { position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; padding: 9px 18px; border-radius: 20px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+.empty { padding: 48px 0; text-align: center; color: var(--text3); font-family: monospace; font-size: 13px; line-height: 1.9; }
+.divider { border-top: 0.5px solid var(--border); margin: 10px 0 8px; }
+.logged-date { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+.sys-notes { font-size: 13px; color: var(--text2); font-style: italic; margin-bottom: 8px; }
+.badge-revisit { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--success-bg); color: var(--success-text); font-weight: 600; white-space: nowrap; }
+.badge-cargo-high { background: var(--success-bg); color: var(--success-text); }
+.badge-cargo-mid  { background: var(--warn-bg);    color: var(--warn-text); }
+.badge-cargo-low  { background: var(--bg3);         color: var(--text3); }
+.cargo-bar { display: flex; gap: 2px; align-items: center; }
+.cargo-pip { width: 9px; height: 9px; border-radius: 2px; background: var(--border2); }
+.cargo-pip.low  { background: var(--text3); }
+.cargo-pip.mid  { background: var(--accent); }
+.cargo-pip.high { background: var(--teal); }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+// ─── Constants ────────────────────────────────────────────────────
+const SOL_X = 175.2, SOL_Y = 145.0; // SC2 map coordinates of Sol
+const PLANET_TYPES = ["Telluric","Water World","Gas Giant","Icy","Airless Rock","Acid","Alkali","Reducing","Radioactive","Treasure","Shattered","Carbon","Unknown"];
+const STAR_COLORS  = ["Yellow","Blue","Orange","Red","White","Brown Dwarf","Binary","Unknown"];
+const HAZ_RANGE    = [0,1,2,3,4,5];
+const CARGO_RANGE  = [0,1,2,3,4,5,6,7,8];
+const CARGO_LABELS = ['— (unsurveyed)','1 – Ignore','2 – Skip','3 – Low','4 – Moderate','5 – Decent','6 – Good ✦','7 – High ✦✦','8 – Excellent ✦✦✦'];
+const STORAGE_KEY  = 'sc2-explorer-v2';
+
+// ─── State ────────────────────────────────────────────────────────
+let state = { systems: [] };
+let ui = { selectedSys: null, openPlanets: {}, openMoons: {}, addingSys: false, addingPlanet: null, addingMoon: null, editingPlanet: null, editingMoon: null, editingSys: null, search: '', mapOpen: false };
+
+// ─── Persistence ──────────────────────────────────────────────────
+function load() { try { const d = localStorage.getItem(STORAGE_KEY); if (d) state = JSON.parse(d); } catch {} }
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
+function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2000); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+// ─── Calculations ─────────────────────────────────────────────────
+function distFromSol(x, y) {
+  return Math.round(Math.sqrt(Math.pow(x - SOL_X, 2) + Math.pow(y - SOL_Y, 2)));
+}
+function cargoTier(v) { return v >= 6 ? 'high' : v >= 3 ? 'mid' : 'low'; }
+function cargoPips(v) {
+  const bar = h('div',{class:'cargo-bar'});
+  for (let i = 1; i <= 8; i++) {
+    const tier = i >= 6 ? 'high' : i >= 3 ? 'mid' : 'low';
+    bar.appendChild(h('div',{class:`cargo-pip${i <= v ? ' '+tier : ''}`}));
+  }
+  return bar;
+}
+
+// ─── DOM Helpers ──────────────────────────────────────────────────
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'class') el.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v);
+  }
+  for (const c of kids.flat(3)) if (c != null) el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  return el;
+}
+function lbl(text, content) { return h('div', {class:'form-field'}, h('label', {}, text), content); }
+function sel(opts, val, onChange) {
+  const el = h('select', {onchange: e => onChange(e.target.value)});
+  opts.forEach(o => { const opt = h('option', {value: String(o)}, String(o)); if (String(o) === String(val)) opt.selected = true; el.appendChild(opt); });
+  return el;
+}
+function inp(type, val, onChange, attrs={}) {
+  const el = h('input', { type, value: String(val ?? ''), ...attrs });
+  el.addEventListener('input', e => onChange(e.target.value));
+  return el;
+}
+function hazPips(val) {
+  const danger = val >= 4;
+  const row = h('div', {class:'haz-row'});
+  for (let i = 1; i <= 5; i++) {
+    row.appendChild(h('div', {class: `haz-pip${i <= val ? (danger ? ' danger' : ' on') : ''}`}));
+  }
+  return row;
+}
+
+// ─── System CRUD ──────────────────────────────────────────────────
+function addSystem(data) {
+  const sys = { id: uid(), name: data.name, x: data.x, y: data.y, starColor: data.starColor, notes: data.notes, addedAt: new Date().toLocaleDateString(), planets: [] };
+  state.systems.push(sys);
+  save(); ui.addingSys = false; ui.selectedSys = sys.id; render();
+}
+function updateSystem(id, data) {
+  const s = state.systems.find(s => s.id === id);
+  if (s) Object.assign(s, data);
+  save(); ui.editingSys = null; render();
+}
+function deleteSystem(id) {
+  if (!confirm('Delete this star system and all its data?')) return;
+  state.systems = state.systems.filter(s => s.id !== id);
+  save(); ui.selectedSys = null; render();
+}
+
+// ─── Planet CRUD ──────────────────────────────────────────────────
+function planetDefaults() { return { id: uid(), type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '', moons: [] }; }
+function addPlanet(sysId, data) {
+  const sys = state.systems.find(s => s.id === sysId);
+  if (!sys) return;
+  sys.planets.push({ ...planetDefaults(), ...data, id: uid(), moons: [] });
+  save(); ui.addingPlanet = null; render();
+}
+function updatePlanet(sysId, planetId, data) {
+  const sys = state.systems.find(s => s.id === sysId);
+  if (!sys) return;
+  const idx = sys.planets.findIndex(p => p.id === planetId);
+  if (idx >= 0) sys.planets[idx] = { ...sys.planets[idx], ...data };
+  save(); ui.editingPlanet = null; render();
+}
+function deletePlanet(sysId, planetId) {
+  const sys = state.systems.find(s => s.id === sysId);
+  if (sys) sys.planets = sys.planets.filter(p => p.id !== planetId);
+  save(); render();
+}
+
+// ─── Moon CRUD ────────────────────────────────────────────────────
+function moonDefaults() { return { id: uid(), type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '' }; }
+function addMoon(sysId, planetId, data) {
+  const sys = state.systems.find(s => s.id === sysId);
+  const planet = sys?.planets.find(p => p.id === planetId);
+  if (!planet) return;
+  planet.moons.push({ ...moonDefaults(), ...data, id: uid() });
+  save(); ui.addingMoon = null; render();
+}
+function updateMoon(sysId, planetId, moonId, data) {
+  const sys = state.systems.find(s => s.id === sysId);
+  const planet = sys?.planets.find(p => p.id === planetId);
+  if (!planet) return;
+  const idx = planet.moons.findIndex(m => m.id === moonId);
+  if (idx >= 0) planet.moons[idx] = { ...planet.moons[idx], ...data };
+  save(); ui.editingMoon = null; render();
+}
+function deleteMoon(sysId, planetId, moonId) {
+  const sys = state.systems.find(s => s.id === sysId);
+  const planet = sys?.planets.find(p => p.id === planetId);
+  if (planet) planet.moons = planet.moons.filter(m => m.id !== moonId);
+  save(); render();
+}
+
+// ─── Body Form (planet or moon) ───────────────────────────────────
+function buildBodyForm(existing, onSave, onCancel, title) {
+  const d = { type: PLANET_TYPES[0], weather: 0, tectonics: 0, temperature: 0, cargoValue: 0, notes: '', ...existing };
+  const box = h('div', {class:'form-box'});
+  box.appendChild(h('div', {class:'form-title'}, title));
+
+  const typeEl = sel(PLANET_TYPES, d.type, v => d.type = v);
+  box.appendChild(lbl('Body type', typeEl));
+
+  box.appendChild(h('div', {class:'form-section-label'}, 'Hazards'));
+  const hazGrid = h('div', {class:'form-grid-3'});
+
+  const weatherEl = sel(HAZ_RANGE, d.weather, v => d.weather = parseInt(v));
+  const tectonicsEl = sel(HAZ_RANGE, d.tectonics, v => d.tectonics = parseInt(v));
+  const tempEl = inp('number', d.temperature, v => d.temperature = parseInt(v) || 0, {inputmode:'numeric', min:'-5', max:'5'});
+
+  hazGrid.appendChild(h('div', {}, h('label',{},'Weather (0–5)'), weatherEl));
+  hazGrid.appendChild(h('div', {}, h('label',{},'Tectonics (0–5)'), tectonicsEl));
+  hazGrid.appendChild(h('div', {}, h('label',{},'Temp (0–5)'), tempEl));
+  box.appendChild(hazGrid);
+
+  box.appendChild(h('div', {class:'form-section-label'}, 'Resources'));
+  const cargoEl = sel(CARGO_RANGE, d.cargoValue, v => d.cargoValue = parseInt(v));
+  // replace option text with labels
+  cargoEl.querySelectorAll('option').forEach((opt, i) => { opt.textContent = CARGO_LABELS[i]; });
+  box.appendChild(lbl('Max resource value (0–8)', cargoEl));
+
+  const notesEl = h('textarea', {rows:'2', placeholder:'Notes...'});
+  notesEl.value = d.notes;
+  notesEl.addEventListener('input', e => d.notes = e.target.value);
+  box.appendChild(lbl('Notes', notesEl));
+
+  const btns = h('div', {class:'form-btns'});
+  const saveBtn = h('button', {class:'btn-primary'}, 'Save');
+  saveBtn.addEventListener('click', () => onSave(d));
+  const cancelBtn = h('button', {}, 'Cancel');
+  cancelBtn.addEventListener('click', onCancel);
+  btns.appendChild(saveBtn); btns.appendChild(cancelBtn);
+  box.appendChild(btns);
+  return box;
+}
+
+// ─── System Form ──────────────────────────────────────────────────
+function buildSystemForm(existing, onSave, onCancel) {
+  const d = { name:'', x: 500, y: 500, starColor: STAR_COLORS[0], notes:'', ...existing };
+  const box = h('div', {class:'form-box'});
+  box.appendChild(h('div', {class:'form-title'}, existing ? 'Edit star system' : 'Log new star system'));
+
+  const nameEl = inp('text', d.name, v => d.name = v, {placeholder:'e.g. Vega'});
+  box.appendChild(lbl('Star system name', nameEl));
+  setTimeout(() => { if (!existing) nameEl.focus(); }, 60);
+
+  const starColorEl = sel(STAR_COLORS, d.starColor, v => d.starColor = v);
+  box.appendChild(lbl('Star color', starColorEl));
+
+  const coordGrid = h('div', {class:'form-grid-2'});
+  const xEl = inp('number', d.x, v => d.x = Math.min(1000, Math.max(0, parseInt(v)||0)), {inputmode:'numeric', min:'0', max:'1000', placeholder:'0–1000'});
+  const yEl = inp('number', d.y, v => d.y = Math.min(1000, Math.max(0, parseInt(v)||0)), {inputmode:'numeric', min:'0', max:'1000', placeholder:'0–1000'});
+  coordGrid.appendChild(h('div',{}, h('label',{},'X coord'), xEl));
+  coordGrid.appendChild(h('div',{}, h('label',{},'Y coord'), yEl));
+  box.appendChild(coordGrid);
+
+  const notesEl = inp('text', d.notes, v => d.notes = v, {placeholder:'Quasispace portal, NPC race...'});
+  box.appendChild(lbl('Notes (optional)', notesEl));
+
+  const btns = h('div', {class:'form-btns'});
+  const saveBtn = h('button', {class:'btn-primary'}, existing ? 'Save changes' : 'Log system ↗');
+  saveBtn.addEventListener('click', () => { if (!d.name.trim()) { nameEl.focus(); return; } onSave(d); });
+  const cancelBtn = h('button', {}, 'Cancel');
+  cancelBtn.addEventListener('click', onCancel);
+  btns.appendChild(saveBtn); btns.appendChild(cancelBtn);
+  box.appendChild(btns);
+  return box;
+}
+
+// ─── Moon row ─────────────────────────────────────────────────────
+function buildMoonRow(moon, moonNum, sysId, planetId) {
+  const key = `${planetId}-${moon.id}`;
+  const isOpen = !!ui.openMoons[key];
+  const frag = document.createDocumentFragment();
+
+  if (ui.editingMoon === moon.id) {
+    frag.appendChild(buildBodyForm(
+      moon,
+      data => updateMoon(sysId, planetId, moon.id, data),
+      () => { ui.editingMoon = null; render(); },
+      `Edit Moon ${moonNum}`
+    ));
+    return frag;
+  }
+
+  const row = h('div', {class:'moon-row'}, 
+    h('span', {class:'moon-num'}, `Moon ${moonNum}`),
+    h('span', {class:'moon-type'}, moon.type),
+    moon.weather > 0 ? h('span', {class:'pstat warn'}, `W${moon.weather}`) : null,
+    moon.tectonics > 0 ? h('span', {class:'pstat warn'}, `T${moon.tectonics}`) : null,
+    moon.cargoValue > 0 ? h('span', {class:`pstat badge-cargo-${cargoTier(moon.cargoValue)}`}, `C${moon.cargoValue}`) : null,
+    moon.cargoValue >= 6 ? h('span', {class:'badge-revisit'}, 'revisit') : null,
+    h('span', {class:'chevron', style:{color:'var(--text3)', fontSize:'11px'}}, isOpen ? '▲':'▼')
+  );
+  row.addEventListener('click', () => { ui.openMoons[key] = !isOpen; render(); });
+  frag.appendChild(row);
+
+  if (isOpen) {
+    const detail = h('div', {class:'moon-detail'});
+    const grid = h('div', {class:'planet-detail-grid'});
+    const items = [
+      ['Weather', moon.weather > 0 ? hazPips(moon.weather) : '—'],
+      ['Tectonics', moon.tectonics > 0 ? hazPips(moon.tectonics) : '—'],
+      ['Temperature', moon.temperature ? `${moon.temperature}/5` : '—'],
+      ['Max resource', moon.cargoValue > 0 ? cargoPips(moon.cargoValue) : '—'],
+    ];
+    items.forEach(([label, val]) => {
+      const item = h('div', {class:'detail-item'}, h('span',{class:'detail-label'},label));
+      const valEl = typeof val === 'string' ? h('span',{class:'detail-value'},val) : val;
+      item.appendChild(valEl);
+      grid.appendChild(item);
+    });
+    detail.appendChild(grid);
+    if (moon.notes) detail.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'8px'}},moon.notes));
+    const btns = h('div',{style:{display:'flex',gap:'6px'}});
+    const editBtn = h('button',{class:'btn-sm'},'Edit');
+    editBtn.addEventListener('click', e => { e.stopPropagation(); ui.editingMoon = moon.id; render(); });
+    const delBtn = h('button',{class:'btn-sm btn-danger'},'Remove');
+    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMoon(sysId, planetId, moon.id); });
+    btns.appendChild(editBtn); btns.appendChild(delBtn);
+    detail.appendChild(btns);
+    frag.appendChild(detail);
+  }
+  return frag;
+}
+
+// ─── Planet block ─────────────────────────────────────────────────
+function buildPlanetBlock(planet, planetNum, sys) {
+  const isOpen = !!ui.openPlanets[planet.id];
+  const block = h('div', {class:'planet-block'});
+
+  if (ui.editingPlanet === planet.id) {
+    block.appendChild(buildBodyForm(
+      planet,
+      data => updatePlanet(sys.id, planet.id, data),
+      () => { ui.editingPlanet = null; render(); },
+      `Edit Planet ${planetNum}`
+    ));
+    return block;
+  }
+
+  const stats = h('div', {class:'planet-stats'});
+  if (planet.weather > 0) stats.appendChild(h('span',{class:`pstat${planet.weather>=4?' warn':''}`}, `W${planet.weather}`));
+  if (planet.tectonics > 0) stats.appendChild(h('span',{class:`pstat${planet.tectonics>=4?' warn':''}`}, `T${planet.tectonics}`));
+  if (planet.temperature > 0) stats.appendChild(h('span',{class:`pstat${planet.temperature>=4?' warn':''}`}, `${planet.temperature}°`));
+  if (planet.cargoValue > 0) {
+    const tier = cargoTier(planet.cargoValue);
+    stats.appendChild(h('span',{class:`pstat cargo badge-cargo-${tier}`}, `C${planet.cargoValue}`));
+    if (planet.cargoValue >= 6) stats.appendChild(h('span',{class:'badge-revisit'}, 'revisit'));
+  }
+
+  const header = h('div', {class:'planet-header'},
+    h('span', {class:'planet-num'}, `Planet ${planetNum}`),
+    h('span', {class:'planet-type'}, planet.type),
+    stats,
+    planet.moons.length > 0 ? h('span',{class:'pstat',style:{marginLeft:'2px'}},`${planet.moons.length}☽`) : null,
+    h('span', {class:'chevron',style:{fontSize:'11px',color:'var(--text3)',marginLeft:'4px'}}, isOpen?'▲':'▼')
+  );
+  header.addEventListener('click', () => { ui.openPlanets[planet.id] = !isOpen; render(); });
+  block.appendChild(header);
+
+  if (isOpen) {
+    const body = h('div', {class:'planet-body'});
+
+    const grid = h('div', {class:'planet-detail-grid'});
+    [
+      ['Weather', planet.weather > 0 ? hazPips(planet.weather) : '—'],
+      ['Tectonics', planet.tectonics > 0 ? hazPips(planet.tectonics) : '—'],
+      ['Temperature', planet.temperature ? `${planet.temperature}/5` : '—'],
+      ['Max resource', planet.cargoValue > 0 ? cargoPips(planet.cargoValue) : '—'],
+    ].forEach(([label, val]) => {
+      const item = h('div',{class:'detail-item'}, h('span',{class:'detail-label'},label));
+      item.appendChild(typeof val === 'string' ? h('span',{class:'detail-value'},val) : val);
+      grid.appendChild(item);
+    });
+    body.appendChild(grid);
+
+    if (planet.notes) body.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'10px'}},planet.notes));
+
+    const pBtns = h('div',{style:{display:'flex',gap:'6px',marginBottom:'8px'}});
+    const editBtn = h('button',{class:'btn-sm'},'Edit planet');
+    editBtn.addEventListener('click', () => { ui.editingPlanet = planet.id; render(); });
+    const delBtn = h('button',{class:'btn-sm btn-danger'},'Remove');
+    delBtn.addEventListener('click', () => deletePlanet(sys.id, planet.id));
+    pBtns.appendChild(editBtn); pBtns.appendChild(delBtn);
+    body.appendChild(pBtns);
+
+    // Moons section
+    const moonSection = h('div', {class:'moon-section'});
+    moonSection.appendChild(h('div',{class:'moon-section-title'}, `Moons (${planet.moons.length})`));
+    planet.moons.forEach((moon, i) => moonSection.appendChild(buildMoonRow(moon, i+1, sys.id, planet.id)));
+
+    if (ui.addingMoon === planet.id) {
+      moonSection.appendChild(buildBodyForm(
+        null,
+        data => addMoon(sys.id, planet.id, data),
+        () => { ui.addingMoon = null; render(); },
+        'Add Moon'
+      ));
+    } else {
+      const addMoonBtn = h('button',{class:'btn-sm',style:{marginTop:'4px'}},'+ Add moon');
+      addMoonBtn.addEventListener('click', () => { ui.addingMoon = planet.id; ui.addingPlanet = null; render(); });
+      moonSection.appendChild(addMoonBtn);
+    }
+    body.appendChild(moonSection);
+    block.appendChild(body);
+  }
+  return block;
+}
+
+// ─── System card ──────────────────────────────────────────────────
+function buildSysCard(sys) {
+  const isOpen = ui.selectedSys === sys.id;
+  const dist = distFromSol(sys.x, sys.y);
+  const card = h('div', {class: isOpen ? 'sys-card open' : 'sys-card'});
+
+  const header = h('div', {class:'sys-header'},
+    h('div', {style:{flex:'1'}},
+      h('div', {class:'sys-name'}, sys.name),
+      h('div', {class:'sys-meta'}, `(${sys.x}, ${sys.y}) · ${dist} from Sol`)
+    ),
+    h('span', {class:'chevron', style:{fontSize:'12px',color:'var(--text3)'}}, isOpen ? '▲':'▼')
+  );
+  header.addEventListener('click', () => { ui.selectedSys = isOpen ? null : sys.id; ui.addingPlanet = null; ui.addingMoon = null; render(); });
+  card.appendChild(header);
+
+  if (isOpen) {
+    if (ui.editingSys === sys.id) {
+      const sysFormWrapper = h('div', {style:{padding:'8px 14px'}});
+      sysFormWrapper.appendChild(buildSystemForm(sys,
+        data => updateSystem(sys.id, { name: data.name, x: data.x, y: data.y, starColor: data.starColor, notes: data.notes }),
+        () => { ui.editingSys = null; render(); }
+      ));
+      card.appendChild(sysFormWrapper);
+      return card;
+    }
+
+    const body = h('div', {class:'sys-body'});
+
+    // Info chips
+    const chips = h('div', {class:'sys-info'});
+    chips.appendChild(h('span', {class:'info-chip'}, sys.starColor + ' star'));
+    chips.appendChild(h('span', {class:'info-chip accent'}, `${dist} units from Sol`));
+    chips.appendChild(h('span', {class:'info-chip'}, `${sys.planets.length} planet${sys.planets.length !== 1?'s':''}`));
+    const totalMoons = sys.planets.reduce((n,p)=>n+p.moons.length, 0);
+    if (totalMoons > 0) chips.appendChild(h('span',{class:'info-chip'}, `${totalMoons} moon${totalMoons !== 1?'s':''}`));
+    const allBodies = [...sys.planets, ...sys.planets.flatMap(p => p.moons)];
+    const maxCargo = Math.max(0, ...allBodies.map(b => b.cargoValue || 0));
+    if (maxCargo > 0) {
+      const tier = cargoTier(maxCargo);
+      chips.appendChild(h('span', {class:`info-chip badge-cargo-${tier}`}, `best resource: ${maxCargo}/8`));
+    }
+    if (maxCargo >= 6) chips.appendChild(h('span', {class:'info-chip badge-revisit'}, 'revisit'));
+    body.appendChild(chips);
+
+    if (sys.notes) body.appendChild(h('div',{class:'sys-notes'}, sys.notes));
+    body.appendChild(h('div',{class:'logged-date'}, 'Logged ' + sys.addedAt));
+
+    // Edit system btn
+    const editSysBtn = h('button',{class:'btn-sm',style:{marginBottom:'10px'}},'Edit system info');
+    editSysBtn.addEventListener('click', () => { ui.editingSys = sys.id; render(); });
+    body.appendChild(editSysBtn);
+
+    // Planets
+    sys.planets.forEach((planet, i) => body.appendChild(buildPlanetBlock(planet, i+1, sys)));
+
+    // Add planet form or button
+    if (ui.addingPlanet === sys.id) {
+      body.appendChild(buildBodyForm(
+        null,
+        data => addPlanet(sys.id, data),
+        () => { ui.addingPlanet = null; render(); },
+        'Add Planet'
+      ));
+    } else {
+      const addPlanetBtn = h('button',{class:'btn-full'},'+ Add planet');
+      addPlanetBtn.addEventListener('click', () => { ui.addingPlanet = sys.id; ui.addingMoon = null; render(); });
+      body.appendChild(addPlanetBtn);
+    }
+
+    const divider = h('div',{class:'divider'});
+    const delBtn = h('button',{class:'btn-sm btn-danger'},'Delete system');
+    delBtn.addEventListener('click', () => deleteSystem(sys.id));
+    divider.appendChild(delBtn);
+    body.appendChild(divider);
+
+    card.appendChild(body);
+  }
+  return card;
+}
+
+// ─── Main render ──────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  const frag = document.createDocumentFragment();
+
+  const filtered = state.systems.filter(s => s.name.toLowerCase().includes(ui.search.toLowerCase()));
+  const totalPlanets = state.systems.reduce((n,s)=>n+s.planets.length,0);
+  const revisitCount = state.systems.filter(s =>
+    [...s.planets, ...s.planets.flatMap(p => p.moons)].some(b => b.cargoValue >= 6)
+  ).length;
+
+  // Header
+  frag.appendChild(h('div', {class:'header'},
+    h('div',{}, h('div',{class:'header-title'},'SC2 Explorer'), h('div',{class:'header-sub'},'The Ur-Quan Masters')),
+    h('div',{class:'stats'},
+      ...[
+        [state.systems.length,'systems'],
+        [totalPlanets,'planets'],
+        [revisitCount,'revisit']
+      ].map(([n,l]) => h('div',{class:'stat'}, h('div',{class:'stat-n'},String(n)), h('div',{class:'stat-l'},l)))
+    )
+  ));
+
+  // Search
+  const searchRow = h('div',{class:'search-row'});
+  const si = h('input',{type:'text',placeholder:'Search star systems...', value:ui.search});
+  si.addEventListener('input', e => { ui.search = e.target.value; render(); });
+  searchRow.appendChild(si);
+  frag.appendChild(searchRow);
+
+  // Add system form
+  if (ui.addingSys) {
+    frag.appendChild(buildSystemForm(null, addSystem, () => { ui.addingSys = false; render(); }));
+  }
+
+  // Empty state
+  if (filtered.length === 0 && !ui.addingSys) {
+    frag.appendChild(h('div',{class:'empty'}, state.systems.length === 0 ? 'No systems logged yet.\nTap + to add your first.' : 'No matches.'));
+  }
+
+  filtered.forEach(s => frag.appendChild(buildSysCard(s)));
+
+  // Map toggle
+  const mapToggle = h('div',{class:'map-toggle'},
+    h('span',{},ui.mapOpen?'▲':'▼'),
+    h('span',{},`Star map (${state.systems.length} logged)`)
+  );
+  mapToggle.addEventListener('click', () => { ui.mapOpen = !ui.mapOpen; render(); });
+  frag.appendChild(mapToggle);
+  if (ui.mapOpen) {
+    const canvas = h('canvas',{id:'starmap',height:'280'});
+    frag.appendChild(canvas);
+    frag.appendChild(h('div',{class:'map-legend'}, `Teal = logged · Amber = selected · Sol at (${SOL_X}, ${SOL_Y}) · Y-axis inverted`));
+  }
+
+  // Export/Import
+  const exportRow = h('div',{class:'export-row'});
+  const expBtn = h('button',{class:'btn-sm'},'Export JSON');
+  expBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='sc2-log.json'; a.click();
+    URL.revokeObjectURL(url); toast('Exported!');
+  });
+  const impLabel = h('label',{class:'btn-sm', style:{cursor:'pointer', border:'0.5px solid var(--border2)', borderRadius:'var(--rs)', padding:'7px 13px', display:'inline-block'}}, 'Import JSON');
+  const impInput = h('input',{type:'file', accept:'.json', style:{display:'none'}});
+  impInput.addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try { const p = JSON.parse(ev.target.result); if (p.systems) { state = p; save(); render(); toast('Imported!'); } else toast('Invalid file'); }
+      catch { toast('Could not parse'); }
+      impInput.value = '';
+    };
+    r.readAsText(f);
+  });
+  impLabel.appendChild(impInput);
+  exportRow.appendChild(expBtn);
+  exportRow.appendChild(impLabel);
+  frag.appendChild(exportRow);
+
+  // FAB
+  if (!ui.addingSys) {
+    const fab = h('button',{class:'fab', 'aria-label':'Add star system'},'+');
+    fab.addEventListener('click', () => { ui.addingSys = true; ui.selectedSys = null; render(); window.scrollTo({top:0,behavior:'smooth'}); });
+    frag.appendChild(fab);
+  }
+
+  app.appendChild(frag);
+  drawMap();
+}
+
+// ─── Star Map ─────────────────────────────────────────────────────
+function drawMap() {
+  const canvas = document.getElementById('starmap');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || 320;
+  canvas.width = w * dpr; canvas.height = w * dpr;
+  canvas.style.height = w + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const size = w, pad = 20, inner = size - pad * 2;
+  const toP = v => pad + (v / 1000) * inner;
+  const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const gridC = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const lblC = dark ? '#636366' : '#aaa';
+
+  ctx.strokeStyle = gridC; ctx.lineWidth = 0.5;
+  [250,500,750].forEach(v => {
+    ctx.beginPath(); ctx.moveTo(pad,toP(v)); ctx.lineTo(size-pad,toP(v)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toP(v),pad); ctx.lineTo(toP(v),size-pad); ctx.stroke();
+  });
+
+  // Draw Sol
+  const sx = toP(SOL_X), sy = toP(1000 - SOL_Y);
+  ctx.beginPath(); ctx.arc(sx,sy,4,0,Math.PI*2);
+  ctx.fillStyle = '#EF9F27'; ctx.globalAlpha=0.4; ctx.fill(); ctx.globalAlpha=1;
+  ctx.fillStyle = lblC; ctx.font='9px monospace'; ctx.fillText('Sol', sx+7, sy+3);
+
+  state.systems.forEach(sys => {
+    const cx = toP(sys.x), cy = toP(1000 - sys.y);
+    const sel = sys.id === ui.selectedSys;
+    ctx.beginPath(); ctx.arc(cx,cy,sel?7:4,0,Math.PI*2);
+    ctx.fillStyle = sel ? '#EF9F27' : '#5DCAA5'; ctx.globalAlpha=0.9; ctx.fill(); ctx.globalAlpha=1;
+    if (sel) {
+      ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2);
+      ctx.strokeStyle='#EF9F27'; ctx.lineWidth=1; ctx.globalAlpha=0.5; ctx.stroke(); ctx.globalAlpha=1;
+    }
+    ctx.fillStyle=lblC; ctx.font='9px monospace'; ctx.fillText(sys.name, cx+10, cy+4);
+  });
+  ctx.fillStyle=lblC; ctx.font='9px monospace';
+  ctx.fillText('0,0', pad, size-4); ctx.fillText('1000', size-36, size-4);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────
+load();
+render();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
