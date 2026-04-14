@@ -329,6 +329,9 @@ function buildBodyForm(existing, onSave, onCancel, title) {
   cargoEl.querySelectorAll('option').forEach((opt, i) => { opt.textContent = CARGO_LABELS[i]; });
   box.appendChild(lbl('Max resource value (0–8)', cargoEl));
 
+  const bioEl = sel(['No','Yes'], d.bioLifeforms ? 'Yes' : 'No', v => d.bioLifeforms = v === 'Yes');
+  box.appendChild(lbl('Biological lifeforms present', bioEl));
+
   const notesEl = h('textarea', {rows:'2', placeholder:'Notes...'});
   notesEl.value = d.notes;
   notesEl.addEventListener('input', e => d.notes = e.target.value);
@@ -400,6 +403,7 @@ function buildMoonRow(moon, moonNum, sysId, planetId) {
     moon.tectonics > 0 ? h('span', {class:'pstat warn'}, `T${moon.tectonics}`) : null,
     moon.cargoValue > 0 ? h('span', {class:`pstat badge-cargo-${cargoTier(moon.cargoValue)}`}, `C${moon.cargoValue}`) : null,
     moon.cargoValue >= 6 ? h('span', {class:'badge-revisit'}, 'revisit') : null,
+    moon.bioLifeforms ? h('span', {class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio') : null,
     h('span', {class:'chevron', style:{color:'var(--text3)', fontSize:'11px'}}, isOpen ? '▲':'▼')
   );
   row.addEventListener('click', () => { ui.openMoons[key] = !isOpen; render(); });
@@ -413,6 +417,7 @@ function buildMoonRow(moon, moonNum, sysId, planetId) {
       ['Tectonics', moon.tectonics > 0 ? hazPips(moon.tectonics) : '—'],
       ['Temperature', moon.temperature ? `${moon.temperature}/5` : '—'],
       ['Max resource', moon.cargoValue > 0 ? cargoPips(moon.cargoValue) : '—'],
+      ['Bio lifeforms', moon.bioLifeforms ? 'Yes' : 'No'],
     ];
     items.forEach(([label, val]) => {
       const item = h('div', {class:'detail-item'}, h('span',{class:'detail-label'},label));
@@ -457,6 +462,7 @@ function buildPlanetBlock(planet, planetNum, sys) {
     const tier = cargoTier(planet.cargoValue);
     stats.appendChild(h('span',{class:`pstat cargo badge-cargo-${tier}`}, `C${planet.cargoValue}`));
     if (planet.cargoValue >= 6) stats.appendChild(h('span',{class:'badge-revisit'}, 'revisit'));
+  if (planet.bioLifeforms) stats.appendChild(h('span',{class:'pstat',style:{background:'var(--success-bg)',color:'var(--success-text)'}}, 'bio'));
   }
 
   const header = h('div', {class:'planet-header'},
@@ -478,6 +484,7 @@ function buildPlanetBlock(planet, planetNum, sys) {
       ['Tectonics', planet.tectonics > 0 ? hazPips(planet.tectonics) : '—'],
       ['Temperature', planet.temperature ? `${planet.temperature}/5` : '—'],
       ['Max resource', planet.cargoValue > 0 ? cargoPips(planet.cargoValue) : '—'],
+      ['Bio lifeforms', planet.bioLifeforms ? 'Yes' : 'No'],
     ].forEach(([label, val]) => {
       const item = h('div',{class:'detail-item'}, h('span',{class:'detail-label'},label));
       item.appendChild(typeof val === 'string' ? h('span',{class:'detail-value'},val) : val);
@@ -556,11 +563,13 @@ function buildSysCard(sys) {
     if (totalMoons > 0) chips.appendChild(h('span',{class:'info-chip'}, `${totalMoons} moon${totalMoons !== 1?'s':''}`));
     const allBodies = [...sys.planets, ...sys.planets.flatMap(p => p.moons)];
     const maxCargo = Math.max(0, ...allBodies.map(b => b.cargoValue || 0));
+    const bioCount = allBodies.filter(b => b.bioLifeforms).length;
     if (maxCargo > 0) {
       const tier = cargoTier(maxCargo);
       chips.appendChild(h('span', {class:`info-chip badge-cargo-${tier}`}, `best resource: ${maxCargo}/8`));
     }
     if (maxCargo >= 6) chips.appendChild(h('span', {class:'info-chip badge-revisit'}, 'revisit'));
+    if (bioCount > 0) chips.appendChild(h('span', {class:'info-chip', style:{background:'var(--success-bg)',color:'var(--success-text)'}}, `bio on ${bioCount} bod${bioCount>1?'ies':'y'}`));
     body.appendChild(chips);
 
     if (sys.notes) body.appendChild(h('div',{class:'sys-notes'}, sys.notes));
@@ -607,6 +616,9 @@ function render() {
 
   const filtered = state.systems.filter(s => s.name.toLowerCase().includes(ui.search.toLowerCase()));
   const totalPlanets = state.systems.reduce((n,s)=>n+s.planets.length,0);
+  const bioSysCount = state.systems.filter(s =>
+    [...s.planets, ...s.planets.flatMap(p => p.moons)].some(b => b.bioLifeforms)
+  ).length;
   const revisitCount = state.systems.filter(s =>
     [...s.planets, ...s.planets.flatMap(p => p.moons)].some(b => b.cargoValue >= 6)
   ).length;
@@ -618,6 +630,7 @@ function render() {
       ...[
         [state.systems.length,'systems'],
         [totalPlanets,'planets'],
+        [bioSysCount,'bio'],
         [revisitCount,'revisit']
       ].map(([n,l]) => h('div',{class:'stat'}, h('div',{class:'stat-n'},String(n)), h('div',{class:'stat-l'},l)))
     )
