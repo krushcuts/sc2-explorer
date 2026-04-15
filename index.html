@@ -166,6 +166,13 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .gh-status.ok{background:var(--ok-bg);color:var(--ok-tx);display:block}
 .gh-status.err{background:var(--bad-bg);color:var(--bad-tx);display:block}
 .chip.faction{background:var(--info-bg);color:var(--info-tx)}
+.gh-ts{font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6}
+
+.confirm-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+.confirm-box{background:var(--bg);border-radius:var(--r);padding:20px;width:100%;max-width:320px;border:.5px solid var(--bdr2)}
+.confirm-msg{font-size:15px;margin-bottom:16px;line-height:1.5}
+.confirm-btns{display:flex;gap:8px}
+.confirm-btns button{flex:1}
 </style>
 </head>
 <body>
@@ -176,20 +183,20 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Telluric','Super Dense','Noble World','Yttric World','Water World','Gas Giant','Icy','Airless Rock','Acid','Alkali','Reducing','Radioactive','Treasure','Shattered','Carbon','Unknown'];
+const PLANET_TYPES = ['Acid','Airless Rock','Alkali','Carbon','Gas Giant','Icy','Metal World','Noble World','Oolite World','Quasi-Degenerate World','Radioactive','Reducing','Shattered','Super Dense','Telluric','Treasure World','Water World','Yttric World','Unknown'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
-const CARGO_OPTS   = [0,1,2,3,4,5,6,8,25];
-const CARGO_LBL    = ['— unsurveyed','1 – Common','2 – Corrosive','3 – Base Metal','4 – Noble Gas','5 – Rare Earth','6 – Precious Metal','8 – Radioactive','25 – Exotic'];
-const RESOURCE_NAME = {0:'—',1:'Common',2:'Corrosive',3:'Base Metal',4:'Noble Gas',5:'Rare Earth',6:'Precious Metal',8:'Radioactive',25:'Exotic'};
+const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
+const CARGO_LBL    = ['— unsurveyed','N/A – None','1 – Common','2 – Corrosive','3 – Base Metal','4 – Noble Gas','5 – Rare Earth','6 – Precious Metal','8 – Radioactive','25 – Exotic'];
+const RESOURCE_NAME = {0:'—','-1':'N/A',1:'Common',2:'Corrosive',3:'Base Metal',4:'Noble Gas',5:'Rare Earth',6:'Precious Metal',8:'Radioactive',25:'Exotic'};
 const FACTIONS = ['—','Humans','Spathi','Ilwrath','Pkunk','Yehat','Melnorme','Druuge','Mycon','Slylandro','Orz','Utwig','Supox','Syreen','VUX','Androsynth','Ur-Quan (Kzer-Za)','Ur-Quan (Kohr-Ah)','Thraddash','Zoq-Fot-Pik','Arilou','Chenjesu','Mmrnmhrm','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,sortBy:'name',ghOpen:false};
-let GH = {token:'',owner:'',repo:'',file:'sc2-log.json'};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false};
+let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
 
 // ── Persistence ───────────────────────────────────────────────────
 function load(){try{const d=localStorage.getItem(KEY);if(d)S=JSON.parse(d)}catch(e){}}
@@ -198,6 +205,23 @@ function loadGH(){try{const d=localStorage.getItem(GH_KEY);if(d)GH=Object.assign
 function saveGH(){try{localStorage.setItem(GH_KEY,JSON.stringify(GH))}catch(e){}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000)}
+
+function confirmDialog(msg, onConfirm){
+  const bg=el('div',{class:'confirm-bg'});
+  const box=el('div',{class:'confirm-box'});
+  box.appendChild(el('div',{class:'confirm-msg'},msg));
+  const btns=el('div',{class:'confirm-btns'});
+  const yesBtn=el('button',{class:'btn-danger'},'Delete');
+  yesBtn.addEventListener('click',()=>{bg.remove();onConfirm();});
+  const noBtn=el('button',{},'Cancel');
+  noBtn.addEventListener('click',()=>bg.remove());
+  btns.appendChild(noBtn);
+  btns.appendChild(yesBtn);
+  box.appendChild(btns);
+  bg.appendChild(box);
+  bg.addEventListener('click',e=>{if(e.target===bg) bg.remove();});
+  document.body.appendChild(bg);
+}
 
 function getFiltered(){
   let list=S.systems.slice();
@@ -214,6 +238,14 @@ function getFiltered(){
   if(UI.filterNotes) list=list.filter(s=>{
     const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
     return (s.notes&&s.notes.trim()) || bodies.some(b=>b.notes&&b.notes.trim());
+  });
+  if(UI.filterTreasure) list=list.filter(s=>{
+    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+    return bodies.some(b=>b.type==='Treasure World');
+  });
+  if(UI.filterHomeworld) list=list.filter(s=>{
+    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+    return bodies.some(b=>b.homeworld);
   });
   if(UI.sortBy==='dist') list.sort((a,b)=>distSol(a.x,a.y)-distSol(b.x,b.y));
   else if(UI.sortBy==='cargo') list.sort((a,b)=>{
@@ -241,8 +273,8 @@ function toggleTheme(){
 // ── Helpers ───────────────────────────────────────────────────────
 function distSol(x,y){return Math.round(Math.sqrt(Math.pow(x-SOL_X,2)+Math.pow(y-SOL_Y,2))*10)/10}
 function fuelDist(x,y){return Math.round(distSol(x,y)/10*10)/10}
-function cargoClass(v){return v===25?'c-high':v>=6?'c-high':v>=3?'c-mid':'c-low'}
-function cargoTier(v){return v===25?'high':v>=6?'high':v>=3?'mid':'low'}
+function cargoClass(v){if(v<=0) return 'c-low'; return v===25?'c-high':v>=6?'c-high':v>=3?'c-mid':'c-low'}
+function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>=3?'mid':'low'}
 
 function el(tag,attrs,...kids){
   const e=document.createElement(tag);
@@ -283,10 +315,11 @@ function pipBar(val,max=8){
   return row;
 }
 function resourceBadge(v){
-  if(!v) return el('span',{class:'dval'},'—');
+  if(v===0) return el('span',{class:'dval'},'—');
+  if(v===-1) return el('span',{class:'tag c-low'},'N/A');
   const name=RESOURCE_NAME[v]||String(v);
   const cls=v===25?'tag c-high':v>=6?'tag c-high':v>=3?'tag c-mid':'tag c-low';
-  return el('span',{class:cls},v===25?`${name} ✦✦✦`:v>=6?`${name} ✦`:name);
+  return el('span',{class:cls},v===25?name+' ✦✦✦':v>=6?name+' ✦':name);
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────
@@ -300,11 +333,12 @@ function updateSys(id,d){
   persist(); UI.editSys=null; render();
 }
 function delSys(id){
-  if(!confirm('Delete this star system and all its data?')) return;
-  S.systems=S.systems.filter(s=>s.id!==id);
-  persist(); UI.sel=null; render();
+  confirmDialog('Delete this star system and all its planets and moons?', ()=>{
+    S.systems=S.systems.filter(s=>s.id!==id);
+    persist(); UI.sel=null; render();
+  });
 }
-function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:'',moons:[]}}
+function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:'',moons:[]}}
 function addPlanet(sysId,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
   const moonData=d._moon; delete d._moon;
@@ -320,8 +354,9 @@ function updatePlanet(sysId,pid,d){
 }
 function delPlanet(sysId,pid){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
-  if(!confirm('Delete this planet?')) return;
-  s.planets=s.planets.filter(p=>p.id!==pid); persist(); render();
+  confirmDialog('Delete this planet and all its moons?', ()=>{
+    s.planets=s.planets.filter(p=>p.id!==pid); persist(); render();
+  });
 }
 function addMoon(sysId,pid,d){
   const p=S.systems.find(s=>s.id===sysId)?.planets.find(p=>p.id===pid); if(!p) return;
@@ -335,14 +370,15 @@ function updateMoon(sysId,pid,mid,d){
   persist(); UI.editMoon=null; render();
 }
 function delMoon(sysId,pid,mid){
-  const p=S.systems.find(s=>s.id===sysId)?.planets.find(p=>p.id===pid); if(!p) return;
-  if(!confirm('Delete this moon?')) return;
-  p.moons=p.moons.filter(m=>m.id!==mid); persist(); render();
+  const p=S.systems.find(s=>s.id===sysId)&&S.systems.find(s=>s.id===sysId).planets.find(p=>p.id===pid); if(!p) return;
+  confirmDialog('Delete this moon?', ()=>{
+    p.moons=p.moons.filter(m=>m.id!==mid); persist(); render();
+  });
 }
 
 // ── Body Form (planet or moon) ────────────────────────────────────
 function bodyForm(existing,title,onSave,onCancel,bodyKind){
-  const d={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:'',...existing};
+  const d={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:'',...existing};
   const box=el('div',{class:'form-box'},el('div',{class:'form-title'},title));
 
   const orderLabel=bodyKind==='moon'?'Moon position (1 = closest to planet)':'Planet position (1 = closest to star)';
@@ -362,6 +398,7 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
 
   box.appendChild(el('div',{class:'section-sep'},'Biology'));
   box.appendChild(field('Biological lifeforms present',mkSel(['No','Yes'],null,d.bioLifeforms?'Yes':'No',v=>d.bioLifeforms=v==='Yes')));
+  box.appendChild(field('Alien homeworld',mkSel(['No','Yes'],null,d.homeworld?'Yes':'No',v=>d.homeworld=v==='Yes')));
 
   const notesTA=el('textarea',{rows:'2',placeholder:'Notes...'});
   notesTA.value=d.notes;
@@ -371,7 +408,7 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   // Optional inline moon (planet form only)
   let moonData=null;
   if(bodyKind==='planet'){
-    const m={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,notes:''};
+    const m={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:''};
     const moonSec=el('div',{style:{display:'none',borderTop:'.5px solid var(--bdr)',paddingTop:'10px',marginTop:'4px'}});
     moonSec.appendChild(field('Moon position (1 = closest to planet)',mkInp('number',m.order||'',v=>m.order=+v||0,{inputmode:'numeric',min:'0',placeholder:'1, 2, 3...'})));
     moonSec.appendChild(field('Moon type',mkSel(PLANET_TYPES,null,m.type,v=>m.type=v)));
@@ -383,6 +420,7 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
     moonSec.appendChild(mg);
     moonSec.appendChild(field('Max resource value',mkSel(CARGO_OPTS,CARGO_LBL,m.cargoValue,v=>m.cargoValue=+v)));
     moonSec.appendChild(field('Bio lifeforms',mkSel(['No','Yes'],null,'No',v=>m.bioLifeforms=v==='Yes')));
+    moonSec.appendChild(field('Alien homeworld',mkSel(['No','Yes'],null,'No',v=>m.homeworld=v==='Yes')));
     const mNotes=el('textarea',{rows:'2',placeholder:'Moon notes...'});
     mNotes.addEventListener('input',e=>m.notes=e.target.value);
     moonSec.appendChild(field('Moon notes',mNotes));
@@ -456,12 +494,13 @@ function moonRow(moon,num,sysId,pid){
   const tags=el('div',{class:'ptags'});
   if(moon.weather>0) tags.appendChild(el('span',{class:'tag'+(moon.weather>=4?' warn':'')},`W${moon.weather}`));
   if(moon.tectonics>0) tags.appendChild(el('span',{class:'tag'+(moon.tectonics>=4?' warn':'')},`T${moon.tectonics}`));
-  if(moon.cargoValue>0){
-    const rName=RESOURCE_NAME[moon.cargoValue]||String(moon.cargoValue);
+  if(moon.cargoValue!==0){
+    const rName=moon.cargoValue===-1?'N/A':(RESOURCE_NAME[moon.cargoValue]||String(moon.cargoValue));
     tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},rName));
   }
   if(moon.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(moon.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
+  if(moon.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
 
   const delBtn=el('button',{class:'btn-del'},'✕');
   delBtn.addEventListener('click',e=>{e.stopPropagation();delMoon(sysId,pid,moon.id);});
@@ -484,7 +523,8 @@ function moonRow(moon,num,sysId,pid){
      ['Tectonics',moon.tectonics>0?pipBar(moon.tectonics):'—'],
      ['Temperature',moon.temperature?String(moon.temperature)+'°':'—'],
      ['Max resource',resourceBadge(moon.cargoValue)],
-     ['Bio lifeforms',moon.bioLifeforms?'Yes':'No']
+     ['Bio lifeforms',moon.bioLifeforms?'Yes':'No'],
+     ['Homeworld',moon.homeworld?'Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
       r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
@@ -517,12 +557,13 @@ function planetBlock(planet,num,sys){
   if(planet.weather>0) tags.appendChild(el('span',{class:'tag'+(planet.weather>=4?' warn':'')},`W${planet.weather}`));
   if(planet.tectonics>0) tags.appendChild(el('span',{class:'tag'+(planet.tectonics>=4?' warn':'')},`T${planet.tectonics}`));
   if(planet.temperature>0) tags.appendChild(el('span',{class:'tag'+(planet.temperature>=4?' warn':'')},`${planet.temperature}°`));
-  if(planet.cargoValue>0){
-    const rName=RESOURCE_NAME[planet.cargoValue]||String(planet.cargoValue);
+  if(planet.cargoValue!==0){
+    const rName=planet.cargoValue===-1?'N/A':(RESOURCE_NAME[planet.cargoValue]||String(planet.cargoValue));
     tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},rName));
   }
   if(planet.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(planet.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
+  if(planet.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
   const moons=planet.moons||[];
   if(moons.length>0) tags.appendChild(el('span',{class:'tag'},`${moons.length}☽`));
 
@@ -547,7 +588,8 @@ function planetBlock(planet,num,sys){
      ['Tectonics',planet.tectonics>0?pipBar(planet.tectonics):'—'],
      ['Temperature',planet.temperature?String(planet.temperature)+'°':'—'],
      ['Max resource',resourceBadge(planet.cargoValue)],
-     ['Bio lifeforms',planet.bioLifeforms?'Yes':'No']
+     ['Bio lifeforms',planet.bioLifeforms?'Yes':'No'],
+     ['Homeworld',planet.homeworld?'Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
       r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
@@ -638,6 +680,8 @@ function sysCard(sys){
   }
   if(maxC>=5) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
   if(bioN>0) chips.appendChild(el('span',{class:'chip ok'},`bio on ${bioN} bod${bioN>1?'ies':'y'}`));
+  const hwN=allBodies.filter(b=>b.homeworld).length;
+  if(hwN>0) chips.appendChild(el('span',{class:'chip info'},'homeworld'));
   body.appendChild(chips);
 
   if(sys.notes) body.appendChild(el('div',{class:'sys-notes'},sys.notes));
@@ -760,7 +804,12 @@ function buildGHModal(){
       const body={message:'SC2 Explorer sync '+new Date().toISOString(),content};
       if(sha) body.sha=sha;
       const res=await fetch(api,{method:'PUT',headers:{'Authorization':'token '+GH.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(res.ok){setStatus('Pushed successfully!',true);toast('Pushed to GitHub!');}
+      if(res.ok){
+        GH.lastPush=new Date().toLocaleString();
+        saveGH();
+        setStatus('Pushed successfully! · '+GH.lastPush,true);
+        toast('Pushed to GitHub!');
+      }
       else{const j=await res.json();setStatus('Error: '+(j.message||res.status),false);}
     }catch(e){setStatus('Network error: '+e.message,false);}
     pushBtn.textContent='↑ Push to GitHub';pushBtn.disabled=false;
@@ -779,7 +828,12 @@ function buildGHModal(){
         const j=await res.json();
         const text=decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))));
         const parsed=JSON.parse(text);
-        if(parsed.systems){S=parsed;persist();UI.ghOpen=false;render();toast('Pulled from GitHub!');}
+        if(parsed.systems){
+          S=parsed;persist();
+          GH.lastPull=new Date().toLocaleString();
+          saveGH();
+          UI.ghOpen=false;render();toast('Pulled from GitHub!');
+        }
         else setStatus('File does not look like SC2 data.',false);
       } else {
         const j=await res.json();setStatus('Error: '+(j.message||res.status),false);
@@ -789,6 +843,14 @@ function buildGHModal(){
   });
 
   modal.appendChild(el('div',{class:'form-btns'},pushBtn,pullBtn));
+
+  if(GH.lastPush||GH.lastPull){
+    const ts=el('div',{class:'gh-ts'});
+    if(GH.lastPush) ts.appendChild(el('div',{},'↑ Last pushed: '+GH.lastPush));
+    if(GH.lastPull) ts.appendChild(el('div',{},'↓ Last pulled: '+GH.lastPull));
+    modal.appendChild(ts);
+  }
+
   modal.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'12px',lineHeight:'1.6'}},'Need a token? Go to github.com → Settings → Developer settings → Personal access tokens → Generate new token. Enable the "repo" scope.'));
 
   bg.appendChild(modal);
@@ -847,9 +909,15 @@ function render(){
   bPill.addEventListener('click',()=>{UI.filterBio=!UI.filterBio;renderList();bPill.className='fpill'+(UI.filterBio?' on':'');});
   const nPill=el('button',{class:'fpill'+(UI.filterNotes?' on':'')},'Has Notes');
   nPill.addEventListener('click',()=>{UI.filterNotes=!UI.filterNotes;renderList();nPill.className='fpill'+(UI.filterNotes?' on':'');});
+  const tPill=el('button',{class:'fpill'+(UI.filterTreasure?' on':'')},'Treasure World');
+  tPill.addEventListener('click',()=>{UI.filterTreasure=!UI.filterTreasure;renderList();tPill.className='fpill'+(UI.filterTreasure?' on':'');});
+  const hwPill=el('button',{class:'fpill'+(UI.filterHomeworld?' on':'')},'Homeworld');
+  hwPill.addEventListener('click',()=>{UI.filterHomeworld=!UI.filterHomeworld;renderList();hwPill.className='fpill'+(UI.filterHomeworld?' on':'');});
   fb.appendChild(rPill);
   fb.appendChild(bPill);
   fb.appendChild(nPill);
+  fb.appendChild(tPill);
+  fb.appendChild(hwPill);
   fb.appendChild(el('div',{class:'sort-sep'}));
   fb.appendChild(el('span',{class:'label'},'Sort:'));
   [['name','A–Z'],['dist','Distance'],['cargo','Cargo']].forEach(([val,lbl])=>{
@@ -908,7 +976,13 @@ function render(){
   impLbl.appendChild(impInp);
   const ghBtn=el('button',{class:'btn-sm'},'⇅ GitHub');
   ghBtn.addEventListener('click',()=>{UI.ghOpen=true;render();});
-  frag.appendChild(el('div',{class:'export-row'},expBtn,impLbl,ghBtn));
+  const exportRowItems=[expBtn,impLbl,ghBtn];
+  const exportRow=el('div',{class:'export-row'},...exportRowItems);
+  if(GH.lastPush||GH.lastPull){
+    const latest=GH.lastPush&&GH.lastPull?(new Date(GH.lastPush)>new Date(GH.lastPull)?GH.lastPush:GH.lastPull):GH.lastPush||GH.lastPull;
+    exportRow.appendChild(el('span',{style:{fontSize:'11px',color:'var(--text3)',alignSelf:'center'}},'Last sync: '+latest));
+  }
+  frag.appendChild(exportRow);
 
   // GitHub modal
   if(UI.ghOpen) frag.appendChild(buildGHModal());
