@@ -148,6 +148,24 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .sys-notes{font-size:13px;color:var(--text2);font-style:italic;margin-bottom:8px}
 .export-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:.5px solid var(--bdr);margin-top:16px}
 .chevron{font-size:11px;color:var(--text3);flex-shrink:0}
+
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.filter-bar .label{font-size:11px;color:var(--text3);flex-shrink:0}
+.fpill{font-size:12px;padding:5px 12px;border-radius:20px;border:.5px solid var(--bdr2);background:var(--bg2);color:var(--text2);cursor:pointer;white-space:nowrap;transition:background .1s}
+.fpill:active{transform:scale(.97)}
+.fpill.on{background:var(--teal);color:#000;border-color:var(--teal);font-weight:600}
+.fpill.on.warn{background:var(--accent);color:#000;border-color:var(--accent)}
+.sort-sep{width:.5px;height:18px;background:var(--bdr2);flex-shrink:0}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--bg);border-radius:var(--r) var(--r) 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.modal-close{float:right;background:none;border:none;font-size:22px;color:var(--text2);cursor:pointer;padding:0;line-height:1}
+.gh-status{font-size:12px;padding:8px 12px;border-radius:var(--rs);margin-top:8px;display:none}
+.gh-status.ok{background:var(--ok-bg);color:var(--ok-tx);display:block}
+.gh-status.err{background:var(--bad-bg);color:var(--bad-tx);display:block}
+.chip.faction{background:var(--info-bg);color:var(--info-tx)}
 </style>
 </head>
 <body>
@@ -163,17 +181,43 @@ const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Bina
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,1,2,3,4,5,6,7,8,25];
 const CARGO_LBL    = ['— unsurveyed','1','2','3','4','5','6','7','8','25 – RARE'];
-const KEY          = 'sc2-v2';
+const FACTIONS = ['—','Humans','Spathi','Ilwrath','Pkunk','Yehat','Melnorme','Druuge','Mycon','Slylandro','Orz','Utwig','Supox','Syreen','VUX','Androsynth','Ur-Quan (Kzer-Za)','Ur-Quan (Kohr-Ah)','Thraddash','Zoq-Fot-Pik','Arilou','Chenjesu','Mmrnmhrm','Other'];
+const KEY = 'sc2-v2';
+const GH_KEY = 'sc2-gh';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,sortBy:'name',ghOpen:false};
+let GH = {token:'',owner:'',repo:'',file:'sc2-log.json'};
 
 // ── Persistence ───────────────────────────────────────────────────
 function load(){try{const d=localStorage.getItem(KEY);if(d)S=JSON.parse(d)}catch(e){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function loadGH(){try{const d=localStorage.getItem(GH_KEY);if(d)GH=Object.assign(GH,JSON.parse(d))}catch(e){}}
+function saveGH(){try{localStorage.setItem(GH_KEY,JSON.stringify(GH))}catch(e){}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000)}
+
+function getFiltered(){
+  let list=S.systems.slice();
+  const q=UI.search.toLowerCase();
+  if(q) list=list.filter(s=>s.name.toLowerCase().includes(q));
+  if(UI.filterRevisit) list=list.filter(s=>{
+    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+    return bodies.some(b=>b.cargoValue>=5);
+  });
+  if(UI.filterBio) list=list.filter(s=>{
+    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+    return bodies.some(b=>b.bioLifeforms);
+  });
+  if(UI.sortBy==='dist') list.sort((a,b)=>distSol(a.x,a.y)-distSol(b.x,b.y));
+  else if(UI.sortBy==='cargo') list.sort((a,b)=>{
+    const maxC=s=>{const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];return bodies.reduce((m,b)=>Math.max(m,b.cargoValue||0),0);};
+    return maxC(b)-maxC(a);
+  });
+  else list.sort((a,b)=>a.name.localeCompare(b.name));
+  return list;
+}
 
 // ── Theme ─────────────────────────────────────────────────────────
 function initTheme(){
@@ -234,12 +278,12 @@ function pipBar(val,max=5){
 
 // ── CRUD ──────────────────────────────────────────────────────────
 function addSys(d){
-  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,notes:d.notes||'',addedAt:new Date().toLocaleDateString(),planets:[]};
+  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toLocaleDateString(),planets:[]};
   S.systems.push(s); persist(); UI.addSys=false; UI.sel=s.id; render();
 }
 function updateSys(id,d){
   const s=S.systems.find(s=>s.id===id);
-  if(s) Object.assign(s,{name:d.name,x:d.x,y:d.y,starColor:d.starColor,notes:d.notes||''});
+  if(s) Object.assign(s,{name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||''});
   persist(); UI.editSys=null; render();
 }
 function delSys(id){
@@ -352,14 +396,17 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
 
 // ── System Form ───────────────────────────────────────────────────
 function sysForm(existing,onSave,onCancel){
-  const d={name:'',x:500,y:500,starColor:STAR_COLORS[0],notes:'',...existing};
+  const d={name:'',x:500,y:500,starColor:STAR_COLORS[0],faction:'—',notes:'',...existing};
   const box=el('div',{class:'form-box'},el('div',{class:'form-title'},existing?'Edit star system':'Log new star system'));
 
   const nameInp=mkInp('text',d.name,v=>d.name=v,{placeholder:'e.g. Vega'});
   box.appendChild(field('Star system name',nameInp));
   setTimeout(()=>{if(!existing) nameInp.focus();},60);
 
-  box.appendChild(field('Star color',mkSel(STAR_COLORS,null,d.starColor,v=>d.starColor=v)));
+  const g2a=el('div',{class:'g2'});
+  g2a.appendChild(el('div',{},el('label',{},'Star color'),mkSel(STAR_COLORS,null,d.starColor,v=>d.starColor=v)));
+  g2a.appendChild(el('div',{},el('label',{},'Home faction / race'),mkSel(FACTIONS,null,d.faction||'—',v=>d.faction=v)));
+  box.appendChild(g2a);
 
   const g=el('div',{class:'g2'});
   const xInp=mkInp('number',d.x,v=>d.x=Math.round(parseFloat(v)*10)/10||0,{inputmode:'decimal',min:'0',max:'1000',step:'0.1',placeholder:'e.g. 290.8'});
@@ -557,6 +604,7 @@ function sysCard(sys){
   // Info chips
   const chips=el('div',{class:'sys-info'});
   chips.appendChild(el('span',{class:'chip'},sys.starColor+' star'));
+  if(sys.faction&&sys.faction!=='—') chips.appendChild(el('span',{class:'chip faction'},sys.faction));
   chips.appendChild(el('span',{class:'chip info'},`${dist} from Sol · ${fuel} fuel units`));
   chips.appendChild(el('span',{class:'chip'},`${sys.planets.length} planet${sys.planets.length!==1?'s':''}`));
   const totalMoons=sys.planets.reduce((n,p)=>n+(p.moons||[]).length,0);
@@ -609,8 +657,7 @@ function renderList(){
   const container=document.getElementById('sys-list');
   if(!container){render();return;}
   container.innerHTML='';
-  const q=UI.search.toLowerCase();
-  const filtered=S.systems.filter(s=>s.name.toLowerCase().includes(q));
+  const filtered=getFiltered();
   if(filtered.length===0){
     container.appendChild(el('div',{class:'empty'},
       S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
@@ -643,6 +690,87 @@ function updateAC(query){
     drop.appendChild(item);
   });
   wrap.appendChild(drop);
+}
+
+// ── GitHub Sync ───────────────────────────────────────────────────
+function buildGHModal(){
+  const bg=el('div',{class:'modal-bg'});
+  const modal=el('div',{class:'modal'});
+
+  const closeBtn=el('button',{class:'modal-close'},'×');
+  closeBtn.addEventListener('click',()=>{UI.ghOpen=false;render();});
+
+  modal.appendChild(el('div',{},closeBtn,el('div',{class:'modal-title'},'GitHub Sync')));
+  modal.appendChild(el('div',{class:'modal-sub'},'Push your exploration log to a file in your GitHub repo, or pull it back. Your token is stored only on this device.'));
+
+  const tInp=mkInp('text',GH.token,v=>GH.token=v,{placeholder:'ghp_xxxxxxxxxxxx',autocomplete:'off'});
+  modal.appendChild(field('Personal access token (repo scope)',tInp));
+  const g=el('div',{class:'g2'});
+  const ownerInp=mkInp('text',GH.owner,v=>GH.owner=v,{placeholder:'your-github-username'});
+  const repoInp=mkInp('text',GH.repo,v=>GH.repo=v,{placeholder:'sc2-explorer'});
+  g.appendChild(el('div',{},el('label',{},'GitHub username'),ownerInp));
+  g.appendChild(el('div',{},el('label',{},'Repository name'),repoInp));
+  modal.appendChild(g);
+  const fileInp=mkInp('text',GH.file,v=>GH.file=v||'sc2-log.json',{placeholder:'sc2-log.json'});
+  modal.appendChild(field('File path in repo',fileInp));
+
+  const status=el('div',{class:'gh-status',id:'gh-status'});
+  modal.appendChild(status);
+
+  function setStatus(msg,ok){
+    status.textContent=msg;
+    status.className='gh-status '+(ok?'ok':'err');
+  }
+
+  const pushBtn=el('button',{class:'btn-primary',style:{marginRight:'8px'}},'↑ Push to GitHub');
+  pushBtn.addEventListener('click',async()=>{
+    if(!GH.token||!GH.owner||!GH.repo){setStatus('Fill in all fields first.',false);return;}
+    saveGH();
+    pushBtn.textContent='Pushing…';pushBtn.disabled=true;
+    try{
+      const path=GH.file||'sc2-log.json';
+      const api=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`;
+      // get existing SHA if file exists
+      let sha='';
+      try{const r=await fetch(api,{headers:{'Authorization':'token '+GH.token,'Accept':'application/vnd.github.v3+json'}});if(r.ok){const j=await r.json();sha=j.sha||'';}}catch(e){}
+      const content=btoa(unescape(encodeURIComponent(JSON.stringify(S,null,2))));
+      const body={message:'SC2 Explorer sync '+new Date().toISOString(),content};
+      if(sha) body.sha=sha;
+      const res=await fetch(api,{method:'PUT',headers:{'Authorization':'token '+GH.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(res.ok){setStatus('Pushed successfully!',true);toast('Pushed to GitHub!');}
+      else{const j=await res.json();setStatus('Error: '+(j.message||res.status),false);}
+    }catch(e){setStatus('Network error: '+e.message,false);}
+    pushBtn.textContent='↑ Push to GitHub';pushBtn.disabled=false;
+  });
+
+  const pullBtn=el('button',{class:'btn-sm'},'↓ Pull from GitHub');
+  pullBtn.addEventListener('click',async()=>{
+    if(!GH.token||!GH.owner||!GH.repo){setStatus('Fill in all fields first.',false);return;}
+    saveGH();
+    pullBtn.textContent='Pulling…';pullBtn.disabled=true;
+    try{
+      const path=GH.file||'sc2-log.json';
+      const api=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`;
+      const res=await fetch(api,{headers:{'Authorization':'token '+GH.token,'Accept':'application/vnd.github.v3+json'}});
+      if(res.ok){
+        const j=await res.json();
+        const text=decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))));
+        const parsed=JSON.parse(text);
+        if(parsed.systems){S=parsed;persist();UI.ghOpen=false;render();toast('Pulled from GitHub!');}
+        else setStatus('File does not look like SC2 data.',false);
+      } else {
+        const j=await res.json();setStatus('Error: '+(j.message||res.status),false);
+      }
+    }catch(e){setStatus('Network error: '+e.message,false);}
+    pullBtn.textContent='↓ Pull from GitHub';pullBtn.disabled=false;
+  });
+
+  modal.appendChild(el('div',{class:'form-btns'},pushBtn,pullBtn));
+  modal.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'12px',lineHeight:'1.6'}},'Need a token? Go to github.com → Settings → Developer settings → Personal access tokens → Generate new token. Enable the "repo" scope.'));
+
+  bg.appendChild(modal);
+  bg.addEventListener('click',e=>{if(e.target===bg){UI.ghOpen=false;render();}});
+  return bg;
 }
 
 // ── Full render ───────────────────────────────────────────────────
@@ -687,14 +815,32 @@ function render(){
   searchWrap.appendChild(si);
   frag.appendChild(searchWrap);
 
+  // Filter + sort bar
+  const fb=el('div',{class:'filter-bar'});
+  fb.appendChild(el('span',{class:'label'},'Filter:'));
+  const rPill=el('button',{class:'fpill warn'+(UI.filterRevisit?' on':'')},'Revisit (C5+)');
+  rPill.addEventListener('click',()=>{UI.filterRevisit=!UI.filterRevisit;renderList();rPill.className='fpill warn'+(UI.filterRevisit?' on':'');});
+  const bPill=el('button',{class:'fpill'+(UI.filterBio?' on':'')},'Bio');
+  bPill.addEventListener('click',()=>{UI.filterBio=!UI.filterBio;renderList();bPill.className='fpill'+(UI.filterBio?' on':'');});
+  fb.appendChild(rPill);
+  fb.appendChild(bPill);
+  fb.appendChild(el('div',{class:'sort-sep'}));
+  fb.appendChild(el('span',{class:'label'},'Sort:'));
+  [['name','A–Z'],['dist','Distance'],['cargo','Cargo']].forEach(([val,lbl])=>{
+    const p=el('button',{class:'fpill'+(UI.sortBy===val?' on':'')},lbl);
+    p.addEventListener('click',()=>{UI.sortBy=val;renderList();document.querySelectorAll('.sort-pill').forEach(x=>x.className='fpill sort-pill');p.className='fpill on sort-pill';});
+    p.classList.add('sort-pill');
+    fb.appendChild(p);
+  });
+  frag.appendChild(fb);
+
   // Add system form
   if(UI.addSys){
     frag.appendChild(sysForm(null,addSys,()=>{UI.addSys=false;render();}));
   }
 
   // Systems container
-  const q=UI.search.toLowerCase();
-  const filtered=S.systems.filter(s=>s.name.toLowerCase().includes(q));
+  const filtered=getFiltered();
   const listDiv=el('div',{id:'sys-list'});
   if(filtered.length===0&&!UI.addSys){
     listDiv.appendChild(el('div',{class:'empty'},S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
@@ -713,7 +859,7 @@ function render(){
     frag.appendChild(el('div',{class:'map-legend'},`Teal = logged · Amber = selected · Sol (${SOL_X}, ${SOL_Y}) · Y-axis inverted`));
   }
 
-  // Export / Import
+  // Export / Import / GitHub
   const expBtn=el('button',{class:'btn-sm'},'Export JSON');
   expBtn.addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
@@ -734,7 +880,12 @@ function render(){
     r.readAsText(f);
   });
   impLbl.appendChild(impInp);
-  frag.appendChild(el('div',{class:'export-row'},expBtn,impLbl));
+  const ghBtn=el('button',{class:'btn-sm'},'⇅ GitHub');
+  ghBtn.addEventListener('click',()=>{UI.ghOpen=true;render();});
+  frag.appendChild(el('div',{class:'export-row'},expBtn,impLbl,ghBtn));
+
+  // GitHub modal
+  if(UI.ghOpen) frag.appendChild(buildGHModal());
 
   // FAB
   if(!UI.addSys){
@@ -807,6 +958,7 @@ function drawMap(){
 
 // ── Boot ──────────────────────────────────────────────────────────
 load();
+loadGH();
 initTheme();
 render();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
