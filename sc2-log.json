@@ -1,0 +1,156 @@
+{
+  "systems": [
+    {
+      "id": "mnz4d8h92ts",
+      "name": "Delta Gorno",
+      "x": 500,
+      "y": 500,
+      "starColor": "Yellow",
+      "notes": "",
+      "addedAt": "4/14/2026",
+      "planets": []
+    },
+    {
+      "id": "mnzg9qfx22k",
+      "name": "Deneb",
+      "x": 218.7,
+      "y": 8.3,
+      "starColor": "Yellow",
+      "notes": "",
+      "addedAt": "4/14/2026",
+      "planets": [
+        {
+          "id": "mnzgbn756tw",
+          "type": "Carbon",
+          "order": 2,
+          "weather": 0,
+          "tectonics": 2,
+          "temperature": "-184",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mnzge1dzgm8",
+          "type": "Unknown",
+          "order": 1,
+          "weather": 0,
+          "tectonics": 5,
+          "temperature": "-52",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mnzgfrctdgl",
+          "type": "Gas Giant",
+          "order": 4,
+          "weather": 8,
+          "tectonics": 0,
+          "temperature": "-231",
+          "cargoValue": 0,
+          "bioLifeforms": false,
+          "notes": "Can’t land",
+          "moons": []
+        },
+        {
+          "id": "mnzghw0hmq9",
+          "type": "Unknown",
+          "order": 3,
+          "weather": 2,
+          "tectonics": 5,
+          "temperature": "-226",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "notes": "Super dense world",
+          "moons": []
+        }
+      ]
+    },
+    {
+      "id": "mnzgk1dyrel",
+      "name": "Epsilon Ptolemae",
+      "x": 185.5,
+      "y": 27,
+      "starColor": "White",
+      "notes": "",
+      "addedAt": "4/14/2026",
+      "planets": [
+        {
+          "id": "mnzgl8lb85p",
+          "type": "Alkali",
+          "order": 1,
+          "weather": 2,
+          "tectonics": 5,
+          "temperature": "-150",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": []
+        }
+      ]
+    },
+    {
+      "id": "mnzgmwmq870",
+      "name": "Zeta Ptolemae",
+      "x": 178.7,
+      "y": 33.8,
+      "starColor": "White",
+      "notes": "",
+      "addedAt": "4/14/2026",
+      "planets": [
+        {
+          "id": "mnzgoqj51dg",
+          "type": "Telluric",
+          "order": 1,
+          "weather": 6,
+          "tectonics": 4,
+          "temperature": "82",
+          "cargoValue": 5,
+          "bioLifeforms": true,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mnzgr5a53hj",
+          "type": "Unknown",
+          "order": 3,
+          "weather": 0,
+          "tectonics": 3,
+          "temperature": "-126",
+          "cargoValue": 4,
+          "bioLifeforms": false,
+          "notes": "Noble world",
+          "moons": []
+        },
+        {
+          "id": "mnzgtqk4u6y",
+          "type": "Gas Giant",
+          "order": 2,
+          "weather": 0,
+          "tectonics": 0,
+          "temperature": "",
+          "cargoValue": 0,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": [
+            {
+              "id": "mnzgtqk47iw",
+              "type": "Unknown",
+              "order": 1,
+              "weather": 0,
+              "tectonics": 2,
+              "temperature": "-105",
+              "cargoValue": 5,
+              "bioLifeforms": false,
+              "notes": "Opalescent",
+              "moons": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
