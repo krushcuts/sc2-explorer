@@ -3,12 +3,13 @@
     {
       "id": "mnz4d8h92ts",
       "name": "Delta Gorno",
-      "x": 500,
+      "x": 100,
       "y": 500,
       "starColor": "Yellow",
       "notes": "",
       "addedAt": "4/14/2026",
-      "planets": []
+      "planets": [],
+      "faction": "—"
     },
     {
       "id": "mnzg9qfx22k",
