@@ -63,6 +63,10 @@ button:active{background:var(--bg3);transform:scale(.97)}
 .stat{text-align:center}
 .stat-n{font-size:17px;font-weight:600;font-family:monospace;line-height:1.1}
 .stat-l{font-size:10px;color:var(--text2)}
+.stat-btn{cursor:pointer;padding:3px 6px;border-radius:var(--rs);border:.5px solid transparent;transition:background .1s}
+.stat-btn:active{background:var(--bg3)}
+.stat-btn.stat-active{background:var(--ok-bg);border-color:var(--ok-tx)}
+.stat-btn.stat-active .stat-l{color:var(--ok-tx)}
 
 .search-row{position:relative;display:flex;gap:8px;margin-bottom:12px}
 .search-row input{flex:1}
@@ -173,6 +177,18 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .confirm-msg{font-size:15px;margin-bottom:16px;line-height:1.5}
 .confirm-btns{display:flex;gap:8px}
 .confirm-btns button{flex:1}
+
+.tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:.5px solid var(--bdr2)}
+.tab{font-size:14px;font-weight:500;padding:10px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;border-radius:0;transition:color .15s}
+.tab:active{background:none;transform:none}
+.tab.on{color:var(--text);border-bottom-color:var(--teal)}
+
+.note-card{border:.5px solid var(--bdr);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px}
+.note-src{font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.note-src .src-sys{color:var(--teal);font-weight:600}
+.note-src .src-body{color:var(--text2)}
+.note-text-body{font-size:14px;color:var(--text);line-height:1.6}
+.note-text-body mark{background:var(--warn-bg);color:var(--warn-tx);border-radius:2px;padding:0 2px}
 </style>
 </head>
 <body>
@@ -195,7 +211,7 @@ const GH_KEY = 'sc2-gh';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:''};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
 
 // ── Persistence ───────────────────────────────────────────────────
@@ -229,7 +245,7 @@ function getFiltered(){
   if(q) list=list.filter(s=>s.name.toLowerCase().includes(q));
   if(UI.filterRevisit) list=list.filter(s=>{
     const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
-    return bodies.some(b=>b.cargoValue>=5);
+    return bodies.some(b=>isRevisitable(b));
   });
   if(UI.filterBio) list=list.filter(s=>{
     const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
@@ -275,6 +291,14 @@ function distSol(x,y){return Math.round(Math.sqrt(Math.pow(x-SOL_X,2)+Math.pow(y
 function fuelDist(x,y){return Math.round(distSol(x,y)/10*10)/10}
 function cargoClass(v){if(v<=0) return 'c-low'; return v===25?'c-high':v>=6?'c-high':v>=3?'c-mid':'c-low'}
 function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>=3?'mid':'low'}
+
+function isRevisitable(b){
+  if((b.cargoValue||0) < 5) return false;
+  if((b.weather||0) + (b.tectonics||0) > 8) return false;
+  const temp = parseFloat(b.temperature);
+  if(!isNaN(temp) && temp > 2000) return false;
+  return true;
+}
 
 function el(tag,attrs,...kids){
   const e=document.createElement(tag);
@@ -498,7 +522,7 @@ function moonRow(moon,num,sysId,pid){
     const rName=moon.cargoValue===-1?'N/A':(RESOURCE_NAME[moon.cargoValue]||String(moon.cargoValue));
     tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},rName));
   }
-  if(moon.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(isRevisitable(moon)) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(moon.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
   if(moon.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
 
@@ -561,7 +585,7 @@ function planetBlock(planet,num,sys){
     const rName=planet.cargoValue===-1?'N/A':(RESOURCE_NAME[planet.cargoValue]||String(planet.cargoValue));
     tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},rName));
   }
-  if(planet.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(isRevisitable(planet)) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(planet.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
   if(planet.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
   const moons=planet.moons||[];
@@ -678,7 +702,7 @@ function sysCard(sys){
     const rName=RESOURCE_NAME[maxC]||String(maxC);
     chips.appendChild(el('span',{class:`chip ${cargoClass(maxC)}`},`best: ${rName}`));
   }
-  if(maxC>=5) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
+  if(allBodies.some(b=>isRevisitable(b))) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
   if(bioN>0) chips.appendChild(el('span',{class:'chip ok'},`bio on ${bioN} bod${bioN>1?'ies':'y'}`));
   const hwN=allBodies.filter(b=>b.homeworld).length;
   if(hwN>0) chips.appendChild(el('span',{class:'chip info'},'homeworld'));
@@ -858,6 +882,92 @@ function buildGHModal(){
   return bg;
 }
 
+// ── Notes Tab ─────────────────────────────────────────────────────
+function buildNotesTab(){
+  const frag=document.createDocumentFragment();
+
+  // Search bar
+  const si=el('input',{type:'text',id:'notes-search',placeholder:'Search notes...',autocomplete:'off'});
+  si.value=UI.notesSearch;
+  si.addEventListener('input',e=>{
+    UI.notesSearch=e.target.value;
+    const list=document.getElementById('notes-list');
+    if(list) renderNotesList(list,e.target.value);
+  });
+  frag.appendChild(el('div',{class:'search-row',style:{marginBottom:'12px'}},si));
+
+  const list=el('div',{id:'notes-list'});
+  renderNotesList(list,UI.notesSearch);
+  frag.appendChild(list);
+  return frag;
+}
+
+function renderNotesList(container,query){
+  container.innerHTML='';
+  const q=(query||'').toLowerCase().trim();
+
+  // Collect all notes entries: {sysName, bodyLabel, note}
+  const entries=[];
+  S.systems.forEach(sys=>{
+    if(sys.notes&&sys.notes.trim()){
+      entries.push({sysName:sys.name,bodyLabel:'Star system',note:sys.notes.trim(),sysId:sys.id});
+    }
+    const sortedP=[...sys.planets].sort((a,b)=>(a.order||999)-(b.order||999));
+    sortedP.forEach(p=>{
+      if(p.notes&&p.notes.trim()){
+        const lbl='Planet '+(p.order||'?')+' · '+p.type;
+        entries.push({sysName:sys.name,bodyLabel:lbl,note:p.notes.trim(),sysId:sys.id});
+      }
+      const sortedM=[...(p.moons||[])].sort((a,b)=>(a.order||999)-(b.order||999));
+      sortedM.forEach(m=>{
+        if(m.notes&&m.notes.trim()){
+          const lbl='Moon '+(m.order||'?')+' of Planet '+(p.order||'?')+' · '+m.type;
+          entries.push({sysName:sys.name,bodyLabel:lbl,note:m.notes.trim(),sysId:sys.id});
+        }
+      });
+    });
+  });
+
+  // Filter by query
+  const filtered=q
+    ? entries.filter(e=>e.note.toLowerCase().includes(q)||e.sysName.toLowerCase().includes(q)||e.bodyLabel.toLowerCase().includes(q))
+    : entries;
+
+  if(filtered.length===0){
+    container.appendChild(el('div',{class:'empty'},
+      entries.length===0?'No notes logged yet.':'No notes match your search.'));
+    return;
+  }
+
+  filtered.forEach(e=>{
+    const card=el('div',{class:'note-card'});
+    // Source line
+    const src=el('div',{class:'note-src'});
+    const sysSpan=el('span',{class:'src-sys'});
+    sysSpan.textContent=e.sysName;
+    sysSpan.style.cursor='pointer';
+    sysSpan.addEventListener('click',()=>{UI.sel=e.sysId;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    src.appendChild(sysSpan);
+    src.appendChild(el('span',{style:{color:'var(--text3)'}},'>'));
+    src.appendChild(el('span',{class:'src-body'},e.bodyLabel));
+    card.appendChild(src);
+
+    // Note text with keyword highlighting
+    const textDiv=el('div',{class:'note-text-body'});
+    if(q){
+      const parts=e.note.split(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'));
+      parts.forEach(part=>{
+        if(part.toLowerCase()===q) textDiv.appendChild(el('mark',{},part));
+        else textDiv.appendChild(document.createTextNode(part));
+      });
+    } else {
+      textDiv.textContent=e.note;
+    }
+    card.appendChild(textDiv);
+    container.appendChild(card);
+  });
+}
+
 // ── Full render ───────────────────────────────────────────────────
 function render(){
   const app=document.getElementById('app');
@@ -866,23 +976,55 @@ function render(){
 
   const totalP=S.systems.reduce((n,s)=>n+s.planets.length,0);
   const bioN=S.systems.filter(s=>[...s.planets,...s.planets.flatMap(p=>p.moons||[])].some(b=>b.bioLifeforms)).length;
-  const revN=S.systems.filter(s=>[...s.planets,...s.planets.flatMap(p=>p.moons||[])].some(b=>b.cargoValue>=6)).length;
+  const revN=S.systems.filter(s=>[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])].some(b=>isRevisitable(b))).length;
   const isLight=document.documentElement.classList.contains('light');
 
   // Header
   const themeBtn=el('button',{id:'theme-btn',class:'btn-theme'},isLight?'☀ Light':'☾ Dark');
   themeBtn.addEventListener('click',toggleTheme);
+  // Build stats — bio and revisit are tappable filter toggles
+  const statsEl=el('div',{class:'stats'});
+
+  // Non-clickable stats
+  [[S.systems.length,'systems'],[totalP,'planets']].forEach(([n,l])=>{
+    statsEl.appendChild(el('div',{class:'stat'},el('div',{class:'stat-n'},String(n)),el('div',{class:'stat-l'},l)));
+  });
+
+  // Clickable bio stat
+  const bioStat=el('div',{class:'stat stat-btn'+(UI.filterBio?' stat-active':'')},el('div',{class:'stat-n'},String(bioN)),el('div',{class:'stat-l'},'bio'));
+  bioStat.addEventListener('click',()=>{UI.filterBio=!UI.filterBio;render();});
+  bioStat.title='Tap to filter by bio';
+  statsEl.appendChild(bioStat);
+
+  // Clickable revisit stat
+  const revStat=el('div',{class:'stat stat-btn'+(UI.filterRevisit?' stat-active':'')},el('div',{class:'stat-n'},String(revN)),el('div',{class:'stat-l'},'revisit'));
+  revStat.addEventListener('click',()=>{UI.filterRevisit=!UI.filterRevisit;render();});
+  revStat.title='Tap to filter revisit candidates';
+  statsEl.appendChild(revStat);
+
   frag.appendChild(el('div',{class:'header'},
     el('div',{class:'header-left'},el('div',{class:'title'},'SC2 Explorer'),el('div',{class:'sub'},'The Ur-Quan Masters')),
-    el('div',{class:'header-right'},
-      el('div',{class:'stats'},
-        ...[
-          [S.systems.length,'systems'],[totalP,'planets'],[bioN,'bio'],[revN,'revisit']
-        ].map(([n,l])=>el('div',{class:'stat'},el('div',{class:'stat-n'},String(n)),el('div',{class:'stat-l'},l)))
-      ),
-      themeBtn
-    )
+    el('div',{class:'header-right'},statsEl,themeBtn)
   ));
+
+  // Tab bar
+  const tabBar=el('div',{class:'tab-bar'});
+  const sysTab=el('button',{class:'tab'+(UI.tab==='systems'?' on':'')},'Systems');
+  sysTab.addEventListener('click',()=>{UI.tab='systems';render();});
+  const notesTab=el('button',{class:'tab'+(UI.tab==='notes'?' on':'')},'Notes');
+  notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
+  tabBar.appendChild(sysTab);
+  tabBar.appendChild(notesTab);
+  frag.appendChild(tabBar);
+
+  // ── Tab content ──
+  if(UI.tab==='notes'){
+    frag.appendChild(buildNotesTab());
+    app.appendChild(frag);
+    // focus notes search
+    setTimeout(()=>{const s=document.getElementById('notes-search');if(s&&!UI.notesSearch)s.focus();},60);
+    return;
+  }
 
   // Search input with custom autocomplete
   const searchWrap=el('div',{class:'search-row'});
