@@ -116,9 +116,9 @@ button:active{background:var(--bg3);transform:scale(.97)}
 
 .pip-row{display:flex;gap:2px;align-items:center}
 .pip{width:10px;height:10px;border-radius:2px;background:var(--bdr2)}
-.pip.low{background:var(--text3)}
-.pip.mid{background:var(--accent)}
-.pip.high{background:var(--teal)}
+.pip.safe{background:var(--teal)}
+.pip.caution{background:var(--accent)}
+.pip.danger{background:var(--bad-tx)}
 
 .form-box{background:var(--bg2);border-radius:var(--r);padding:16px;border:.5px solid var(--bdr2);margin-bottom:10px}
 .form-title{font-size:15px;font-weight:700;margin-bottom:14px}
@@ -176,18 +176,19 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Telluric','Water World','Gas Giant','Icy','Airless Rock','Acid','Alkali','Reducing','Radioactive','Treasure','Shattered','Carbon','Unknown'];
+const PLANET_TYPES = ['Telluric','Super Dense','Noble World','Water World','Gas Giant','Icy','Airless Rock','Acid','Alkali','Reducing','Radioactive','Treasure','Shattered','Carbon','Unknown'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,1,2,3,4,5,6,7,8,25];
-const CARGO_LBL    = ['— unsurveyed','1','2','3','4','5','6','7','8','25 – RARE'];
+const CARGO_LBL    = ['— unsurveyed','1 – Common','2 – Corrosive','3 – Base Metal','4 – Noble Gas','5 – Rare Earth','6 – Precious Metal','7','8 – Radioactive','25 – Exotic'];
+const RESOURCE_NAME = {0:'—',1:'Common',2:'Corrosive',3:'Base Metal',4:'Noble Gas',5:'Rare Earth',6:'Precious Metal',7:'(7)',8:'Radioactive',25:'Exotic'};
 const FACTIONS = ['—','Humans','Spathi','Ilwrath','Pkunk','Yehat','Melnorme','Druuge','Mycon','Slylandro','Orz','Utwig','Supox','Syreen','VUX','Androsynth','Ur-Quan (Kzer-Za)','Ur-Quan (Kohr-Ah)','Thraddash','Zoq-Fot-Pik','Arilou','Chenjesu','Mmrnmhrm','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,sortBy:'name',ghOpen:false};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,sortBy:'name',ghOpen:false};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json'};
 
 // ── Persistence ───────────────────────────────────────────────────
@@ -209,6 +210,10 @@ function getFiltered(){
   if(UI.filterBio) list=list.filter(s=>{
     const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
     return bodies.some(b=>b.bioLifeforms);
+  });
+  if(UI.filterNotes) list=list.filter(s=>{
+    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+    return (s.notes&&s.notes.trim()) || bodies.some(b=>b.notes&&b.notes.trim());
   });
   if(UI.sortBy==='dist') list.sort((a,b)=>distSol(a.x,a.y)-distSol(b.x,b.y));
   else if(UI.sortBy==='cargo') list.sort((a,b)=>{
@@ -267,13 +272,21 @@ function mkInp(type,val,cb,attrs={}){
   i.addEventListener('input',e=>cb(e.target.value));
   return i;
 }
-function pipBar(val,max=5){
+function pipBar(val,max=8){
+  // Colors based on pip position: 1-3 safe (green), 4-6 caution (amber), 7-8 danger (red)
   const row=el('div',{class:'pip-row'});
   for(let i=1;i<=max;i++){
-    const tier=max===8?(i>=6?'high':i>=3?'mid':'low'):(i>=4?'mid':'low');
-    row.appendChild(el('div',{class:'pip'+(i<=val?' '+tier:'')}));
+    let cls='pip';
+    if(i<=val) cls+= i>=7?' danger': i>=4?' caution':' safe';
+    row.appendChild(el('div',{class:cls}));
   }
   return row;
+}
+function resourceBadge(v){
+  if(!v) return el('span',{class:'dval'},'—');
+  const name=RESOURCE_NAME[v]||String(v);
+  const cls=v===25?'tag c-high':v>=6?'tag c-high':v>=3?'tag c-mid':'tag c-low';
+  return el('span',{class:cls},v===25?`${name} ✦✦✦`:v>=6?`${name} ✦`:name);
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────
@@ -443,8 +456,11 @@ function moonRow(moon,num,sysId,pid){
   const tags=el('div',{class:'ptags'});
   if(moon.weather>0) tags.appendChild(el('span',{class:'tag'+(moon.weather>=4?' warn':'')},`W${moon.weather}`));
   if(moon.tectonics>0) tags.appendChild(el('span',{class:'tag'+(moon.tectonics>=4?' warn':'')},`T${moon.tectonics}`));
-  if(moon.cargoValue>0) tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},`C${moon.cargoValue}`));
-  if(moon.cargoValue>=6) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(moon.cargoValue>0){
+    const rName=RESOURCE_NAME[moon.cargoValue]||String(moon.cargoValue);
+    tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},rName));
+  }
+  if(moon.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(moon.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
 
   const delBtn=el('button',{class:'btn-del'},'✕');
@@ -463,10 +479,11 @@ function moonRow(moon,num,sysId,pid){
   if(isOpen){
     const det=el('div',{class:'moon-detail'});
     const grid=el('div',{class:'detail-grid'});
-    [['Weather',moon.weather>0?pipBar(moon.weather):'—'],
+    [['Position',moon.order?'#'+moon.order:'—'],
+     ['Weather',moon.weather>0?pipBar(moon.weather):'—'],
      ['Tectonics',moon.tectonics>0?pipBar(moon.tectonics):'—'],
-     ['Temperature',moon.temperature?`${moon.temperature}/5`:'—'],
-     ['Max resource',moon.cargoValue>0?pipBar(moon.cargoValue,8):'—'],
+     ['Temperature',moon.temperature?String(moon.temperature)+'°':'—'],
+     ['Max resource',resourceBadge(moon.cargoValue)],
      ['Bio lifeforms',moon.bioLifeforms?'Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
@@ -500,8 +517,11 @@ function planetBlock(planet,num,sys){
   if(planet.weather>0) tags.appendChild(el('span',{class:'tag'+(planet.weather>=4?' warn':'')},`W${planet.weather}`));
   if(planet.tectonics>0) tags.appendChild(el('span',{class:'tag'+(planet.tectonics>=4?' warn':'')},`T${planet.tectonics}`));
   if(planet.temperature>0) tags.appendChild(el('span',{class:'tag'+(planet.temperature>=4?' warn':'')},`${planet.temperature}°`));
-  if(planet.cargoValue>0) tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},`C${planet.cargoValue}`));
-  if(planet.cargoValue>=6) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(planet.cargoValue>0){
+    const rName=RESOURCE_NAME[planet.cargoValue]||String(planet.cargoValue);
+    tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},rName));
+  }
+  if(planet.cargoValue>=5) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
   if(planet.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
   const moons=planet.moons||[];
   if(moons.length>0) tags.appendChild(el('span',{class:'tag'},`${moons.length}☽`));
@@ -523,10 +543,10 @@ function planetBlock(planet,num,sys){
     const body=el('div',{class:'planet-body'});
     const grid=el('div',{class:'detail-grid'});
     [['Position',planet.order?'#'+planet.order:'—'],
-     ['Weather',planet.weather>0?pipBar(planet.weather,8):'—'],
-     ['Tectonics',planet.tectonics>0?pipBar(planet.tectonics,8):'—'],
+     ['Weather',planet.weather>0?pipBar(planet.weather):'—'],
+     ['Tectonics',planet.tectonics>0?pipBar(planet.tectonics):'—'],
      ['Temperature',planet.temperature?String(planet.temperature)+'°':'—'],
-     ['Max resource',planet.cargoValue>0?(planet.cargoValue===25?'25 – RARE':pipBar(planet.cargoValue,8)):'—'],
+     ['Max resource',resourceBadge(planet.cargoValue)],
      ['Bio lifeforms',planet.bioLifeforms?'Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
@@ -612,8 +632,11 @@ function sysCard(sys){
   const allBodies=[...sys.planets,...sys.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
   const maxC=allBodies.reduce((m,b)=>Math.max(m,b.cargoValue||0),0);
   const bioN=allBodies.filter(b=>b.bioLifeforms).length;
-  if(maxC>0) chips.appendChild(el('span',{class:`chip ${cargoClass(maxC)}`},`best resource: ${maxC===25?'25 (RARE)':maxC+'/8'}`));
-  if(maxC>=6||maxC===25) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
+  if(maxC>0){
+    const rName=RESOURCE_NAME[maxC]||String(maxC);
+    chips.appendChild(el('span',{class:`chip ${cargoClass(maxC)}`},`best: ${rName}`));
+  }
+  if(maxC>=5) chips.appendChild(el('span',{class:'chip revisit'},'revisit'));
   if(bioN>0) chips.appendChild(el('span',{class:'chip ok'},`bio on ${bioN} bod${bioN>1?'ies':'y'}`));
   body.appendChild(chips);
 
@@ -822,8 +845,11 @@ function render(){
   rPill.addEventListener('click',()=>{UI.filterRevisit=!UI.filterRevisit;renderList();rPill.className='fpill warn'+(UI.filterRevisit?' on':'');});
   const bPill=el('button',{class:'fpill'+(UI.filterBio?' on':'')},'Bio');
   bPill.addEventListener('click',()=>{UI.filterBio=!UI.filterBio;renderList();bPill.className='fpill'+(UI.filterBio?' on':'');});
+  const nPill=el('button',{class:'fpill'+(UI.filterNotes?' on':'')},'Has Notes');
+  nPill.addEventListener('click',()=>{UI.filterNotes=!UI.filterNotes;renderList();nPill.className='fpill'+(UI.filterNotes?' on':'');});
   fb.appendChild(rPill);
   fb.appendChild(bPill);
+  fb.appendChild(nPill);
   fb.appendChild(el('div',{class:'sort-sep'}));
   fb.appendChild(el('span',{class:'label'},'Sort:'));
   [['name','A–Z'],['dist','Distance'],['cargo','Cargo']].forEach(([val,lbl])=>{
