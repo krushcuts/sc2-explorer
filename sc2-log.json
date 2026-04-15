@@ -185,6 +185,70 @@
           "bioLifeforms": false,
           "notes": "",
           "moons": []
+        },
+        {
+          "id": "mnzpurfrc2j",
+          "type": "Water World",
+          "order": 4,
+          "weather": 2,
+          "tectonics": 4,
+          "temperature": "-123",
+          "cargoValue": 3,
+          "bioLifeforms": true,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mnzpwxqilpw",
+          "type": "Gas Giant",
+          "order": 1,
+          "weather": 0,
+          "tectonics": 0,
+          "temperature": "",
+          "cargoValue": 0,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": [
+            {
+              "id": "mnzpwxqibtt",
+              "type": "Quasi-Degenerate World",
+              "order": 2,
+              "weather": 0,
+              "tectonics": 5,
+              "temperature": "25",
+              "cargoValue": 0,
+              "bioLifeforms": false,
+              "notes": "",
+              "moons": [],
+              "homeworld": false
+            },
+            {
+              "id": "mnzq0wrgz6o",
+              "type": "Oolite World",
+              "order": 1,
+              "weather": 8,
+              "tectonics": 3,
+              "temperature": "113",
+              "cargoValue": 6,
+              "bioLifeforms": false,
+              "notes": "",
+              "moons": [],
+              "homeworld": false
+            },
+            {
+              "id": "mnzq5pqxy2s",
+              "type": "Metal World",
+              "order": 3,
+              "weather": 8,
+              "tectonics": 3,
+              "temperature": "141",
+              "cargoValue": 0,
+              "bioLifeforms": false,
+              "notes": "",
+              "moons": [],
+              "homeworld": false
+            }
+          ]
         }
       ]
     }
