@@ -52,19 +52,19 @@
           "temperature": "-231",
           "cargoValue": 0,
           "bioLifeforms": false,
-          "notes": "Can’t land",
+          "notes": "",
           "moons": []
         },
         {
           "id": "mnzghw0hmq9",
-          "type": "Unknown",
+          "type": "Super Dense",
           "order": 3,
           "weather": 2,
           "tectonics": 5,
           "temperature": "-226",
           "cargoValue": 3,
           "bioLifeforms": false,
-          "notes": "Super dense world",
+          "notes": "",
           "moons": []
         }
       ]
@@ -115,14 +115,14 @@
         },
         {
           "id": "mnzgr5a53hj",
-          "type": "Unknown",
+          "type": "Noble World",
           "order": 3,
           "weather": 0,
           "tectonics": 3,
           "temperature": "-126",
           "cargoValue": 4,
           "bioLifeforms": false,
-          "notes": "Noble world",
+          "notes": "",
           "moons": []
         },
         {
@@ -149,6 +149,42 @@
               "moons": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "mnzoxawzxsq",
+      "name": "Eta Ptolemae",
+      "x": 174,
+      "y": 42.3,
+      "starColor": "Blue",
+      "faction": "—",
+      "notes": "",
+      "addedAt": "4/14/2026",
+      "planets": [
+        {
+          "id": "mnzplmspj03",
+          "type": "Yttric World",
+          "order": 5,
+          "weather": 2,
+          "tectonics": 2,
+          "temperature": "-141",
+          "cargoValue": 5,
+          "bioLifeforms": true,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mnzpplwzbxw",
+          "type": "Yttric World",
+          "order": 7,
+          "weather": 1,
+          "tectonics": 4,
+          "temperature": "-166",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "notes": "",
+          "moons": []
         }
       ]
     }
