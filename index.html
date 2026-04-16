@@ -224,7 +224,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Acidic World','Airless Rock','Alkali','Carbide World','Chondrite World','Copper World','Dust World','Gas Giant','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Purple World','Quasi-Degenerate World','Radioactive','Reducing','Redux World','Selenic World','Shattered','Super Dense','Telluric','Treasure World','Ultramarine World','Urea World','Water World','Xenolithic World','Yttric World','Unknown'];
+const PLANET_TYPES = ['Acid World','Airless Rock','Alkali World','Carbide World','Chondrite World','Copper World','Dust World','Gas Giant','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Purple World','Quasi-Degenerate World','Radioactive','Reducing','Redux World','Selenic World','Shattered','Super Dense','Telluric','Treasure World','Ultramarine World','Urea World','Water World','Xenolithic World','Yttric World','Unknown'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -1032,10 +1032,10 @@ function buildPlanetsTab(){
     const fuel=fuelDist(sys.x,sys.y);
     const sortedP=[...sys.planets].sort((a,b)=>(a.order||999)-(b.order||999));
     sortedP.forEach(p=>{
-      rows.push({sysId:sys.id,sysName:sys.name,designator:String(p.order||'?'),type:p.type,revisit:isRevisitable(p),fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:p.order||999});
+      rows.push({sysId:sys.id,sysName:sys.name,designator:String(p.order||'?'),type:p.type,revisit:isRevisitable(p),cargo:p.cargoValue||0,fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:p.order||999});
       const sortedM=[...(p.moons||[])].sort((a,b)=>(a.order||999)-(b.order||999));
       sortedM.forEach(m=>{
-        rows.push({sysId:sys.id,sysName:sys.name,designator:(p.order||'?')+'.'+( m.order||'?'),type:m.type,revisit:isRevisitable(m),fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:(p.order||999)+((m.order||999)/1000)});
+        rows.push({sysId:sys.id,sysName:sys.name,designator:(p.order||'?')+'.'+( m.order||'?'),type:m.type,revisit:isRevisitable(m),cargo:m.cargoValue||0,fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:(p.order||999)+((m.order||999)/1000)});
       });
     });
   });
@@ -1047,6 +1047,7 @@ function buildPlanetsTab(){
     else if(UI.pvSort==='designator'){av=a._order;bv=b._order;}
     else if(UI.pvSort==='type'){av=a.type.toLowerCase();bv=b.type.toLowerCase();}
     else if(UI.pvSort==='revisit'){av=a.revisit?0:1;bv=b.revisit?0:1;}
+    else if(UI.pvSort==='max'){av=-(a.cargo||0);bv=-(b.cargo||0);}
     else if(UI.pvSort==='fuel'){av=a._fuelNum;bv=b._fuelNum;}
     else {av=a.sysName.toLowerCase();bv=b.sysName.toLowerCase();}
     if(av<bv) return -UI.pvDir;
@@ -1061,9 +1062,10 @@ function buildPlanetsTab(){
 
   const cols=[
     {key:'system',label:'Star System'},
-    {key:'designator',label:'Planet-Moon'},
+    {key:'designator',label:'Planet'},
     {key:'type',label:'Type'},
     {key:'revisit',label:'Revisit'},
+    {key:'max',label:'Max'},
     {key:'fuel',label:'Fuel Dist'},
   ];
 
@@ -1093,6 +1095,7 @@ function buildPlanetsTab(){
     tr.appendChild(el('td',{},row.designator));
     tr.appendChild(el('td',{},row.type));
     tr.appendChild(el('td',{},row.revisit?el('span',{class:'pv-revisit'},'✦'):''));
+    tr.appendChild(el('td',{style:{fontFamily:'monospace'}},row.cargo>0?String(row.cargo):'—'));
     tr.appendChild(el('td',{style:{fontFamily:'monospace'}},String(row.fuel)));
     tbody.appendChild(tr);
   });
