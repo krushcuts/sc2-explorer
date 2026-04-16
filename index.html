@@ -196,6 +196,20 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .note-text-body{font-size:14px;color:var(--text);line-height:1.6}
 .note-text-body mark{background:var(--warn-bg);color:var(--warn-tx);border-radius:2px;padding:0 2px}
 
+.pv-table{width:100%;border-collapse:collapse;font-size:13px}
+.pv-table th{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:.5px solid var(--bdr2);cursor:pointer;white-space:nowrap;text-align:left;user-select:none;background:var(--bg)}
+.pv-table th:active{color:var(--text)}
+.pv-table th .sort-arrow{margin-left:4px;opacity:.4;font-size:10px}
+.pv-table th.sorted .sort-arrow{opacity:1;color:var(--teal)}
+.pv-table td{padding:8px 8px;border-bottom:.5px solid var(--bdr);vertical-align:middle;color:var(--text)}
+.pv-table tr:last-child td{border-bottom:none}
+.pv-table tr:active td{background:var(--bg2)}
+.pv-sys{font-family:monospace;font-size:12px;color:var(--teal);cursor:pointer}
+.pv-sys:active{opacity:.7}
+.pv-revisit{color:var(--ok-tx);font-weight:700;font-size:13px}
+.pv-empty{padding:40px 0;text-align:center;color:var(--text3);font-size:13px;font-family:monospace}
+.pv-wrap{overflow-x:auto;border:.5px solid var(--bdr);border-radius:var(--rs)}
+
 .gh-banner{display:flex;align-items:center;gap:8px;margin-top:8px;padding:10px 14px;border:.5px solid var(--ok-tx);border-radius:var(--rs);background:var(--ok-bg);cursor:pointer}
 .gh-banner-icon{font-size:14px;color:var(--ok-tx);flex-shrink:0}
 .gh-banner-label{font-size:12px;color:var(--ok-tx);font-weight:600;flex-shrink:0}
@@ -216,13 +230,13 @@ const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
 const CARGO_LBL    = ['— unsurveyed','N/A – None','1 – Common','2 – Corrosive','3 – Base Metal','4 – Noble Gas','5 – Rare Earth','6 – Precious Metal','8 – Radioactive','25 – Exotic'];
 const RESOURCE_NAME = {0:'—','-1':'N/A',1:'Common',2:'Corrosive',3:'Base Metal',4:'Noble Gas',5:'Rare Earth',6:'Precious Metal',8:'Radioactive',25:'Exotic'};
-const FACTIONS = ['—','Humans','Spathi','Ilwrath','Pkunk','Yehat','Melnorme','Druuge','Mycon','Slylandro','Orz','Utwig','Supox','Syreen','VUX','Androsynth','Ur-Quan (Kzer-Za)','Ur-Quan (Kohr-Ah)','Thraddash','Zoq-Fot-Pik','Arilou','Chenjesu','Mmrnmhrm','Other'];
+const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:''};
+let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
 
 // ── Persistence ───────────────────────────────────────────────────
@@ -275,10 +289,7 @@ function getFiltered(){
     const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
     return bodies.some(b=>b.type==='Treasure World');
   });
-  if(UI.filterHomeworld) list=list.filter(s=>{
-    const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
-    return bodies.some(b=>b.homeworld);
-  });
+  if(UI.filterHomeworld) list=list.filter(s=>s.faction&&s.faction!=='—');
   if(UI.sortBy==='dist') list.sort((a,b)=>distSol(a.x,a.y)-distSol(b.x,b.y));
   else if(UI.sortBy==='cargo') list.sort((a,b)=>{
     const maxC=s=>{const bodies=[...s.planets,...s.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];return bodies.reduce((m,b)=>Math.max(m,b.cargoValue||0),0);};
@@ -317,9 +328,9 @@ function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>
 
 function isRevisitable(b){
   if((b.cargoValue||0) < 5) return false;
-  if((b.weather||0) + (b.tectonics||0) > 8) return false;
+  if((b.weather||0) + (b.tectonics||0) >= 8) return false;
   const temp = parseFloat(b.temperature);
-  if(!isNaN(temp) && temp > 2000) return false;
+  if(!isNaN(temp) && temp >= 1000) return false;
   return true;
 }
 
@@ -1011,6 +1022,88 @@ function renderNotesList(container,query){
 
 const ICON_SRC = 'data:image/png;base64,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';
 
+// ── Planets Visited Tab ───────────────────────────────────────────
+function buildPlanetsTab(){
+  const frag=document.createDocumentFragment();
+
+  // Flatten all planets and moons into rows
+  const rows=[];
+  S.systems.forEach(sys=>{
+    const fuel=fuelDist(sys.x,sys.y);
+    const sortedP=[...sys.planets].sort((a,b)=>(a.order||999)-(b.order||999));
+    sortedP.forEach(p=>{
+      rows.push({sysId:sys.id,sysName:sys.name,designator:String(p.order||'?'),type:p.type,revisit:isRevisitable(p),fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:p.order||999});
+      const sortedM=[...(p.moons||[])].sort((a,b)=>(a.order||999)-(b.order||999));
+      sortedM.forEach(m=>{
+        rows.push({sysId:sys.id,sysName:sys.name,designator:(p.order||'?')+'.'+( m.order||'?'),type:m.type,revisit:isRevisitable(m),fuel:fuel,_fuelNum:typeof fuel==='number'?fuel:9999,_order:(p.order||999)+((m.order||999)/1000)});
+      });
+    });
+  });
+
+  // Sort
+  const sortedRows=[...rows].sort((a,b)=>{
+    let av,bv;
+    if(UI.pvSort==='system'){av=a.sysName.toLowerCase();bv=b.sysName.toLowerCase();}
+    else if(UI.pvSort==='designator'){av=a._order;bv=b._order;}
+    else if(UI.pvSort==='type'){av=a.type.toLowerCase();bv=b.type.toLowerCase();}
+    else if(UI.pvSort==='revisit'){av=a.revisit?0:1;bv=b.revisit?0:1;}
+    else if(UI.pvSort==='fuel'){av=a._fuelNum;bv=b._fuelNum;}
+    else {av=a.sysName.toLowerCase();bv=b.sysName.toLowerCase();}
+    if(av<bv) return -UI.pvDir;
+    if(av>bv) return UI.pvDir;
+    return 0;
+  });
+
+  if(rows.length===0){
+    frag.appendChild(el('div',{class:'pv-empty'},'No planets logged yet.'));
+    return frag;
+  }
+
+  const cols=[
+    {key:'system',label:'Star System'},
+    {key:'designator',label:'Planet-Moon'},
+    {key:'type',label:'Type'},
+    {key:'revisit',label:'Revisit'},
+    {key:'fuel',label:'Fuel Dist'},
+  ];
+
+  const wrap=el('div',{class:'pv-wrap'});
+  const table=el('table',{class:'pv-table'});
+  const thead=el('tr',{});
+  cols.forEach(c=>{
+    const isSorted=UI.pvSort===c.key;
+    const th=el('th',{class:isSorted?'sorted':''},c.label,el('span',{class:'sort-arrow'},isSorted?(UI.pvDir===1?'▼':'▲'):'▼'));
+    th.addEventListener('click',()=>{
+      if(UI.pvSort===c.key) UI.pvDir*=-1;
+      else {UI.pvSort=c.key;UI.pvDir=1;}
+      render();
+    });
+    thead.appendChild(th);
+  });
+  table.appendChild(el('thead',{},thead));
+
+  const tbody=el('tbody',{});
+  sortedRows.forEach(row=>{
+    const tr=el('tr',{});
+    const sysCell=el('td',{});
+    const sysSpan=el('span',{class:'pv-sys'},row.sysName);
+    sysSpan.addEventListener('click',()=>{UI.sel=row.sysId;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    sysCell.appendChild(sysSpan);
+    tr.appendChild(sysCell);
+    tr.appendChild(el('td',{},row.designator));
+    tr.appendChild(el('td',{},row.type));
+    tr.appendChild(el('td',{},row.revisit?el('span',{class:'pv-revisit'},'✦'):''));
+    tr.appendChild(el('td',{style:{fontFamily:'monospace'}},String(row.fuel)));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  frag.appendChild(wrap);
+
+  frag.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'8px',fontFamily:'monospace'}},`${rows.length} bodies logged · tap star name to jump to system`));
+  return frag;
+}
+
 // ── Full render ───────────────────────────────────────────────────
 function render(){
   const app=document.getElementById('app');
@@ -1058,16 +1151,24 @@ function render(){
   sysTab.addEventListener('click',()=>{UI.tab='systems';render();});
   const notesTab=el('button',{class:'tab'+(UI.tab==='notes'?' on':'')},'Notes');
   notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
+  const planetsTab=el('button',{class:'tab'+(UI.tab==='planets'?' on':'')},'Planets Visited');
+  planetsTab.addEventListener('click',()=>{UI.tab='planets';render();});
   tabBar.appendChild(sysTab);
   tabBar.appendChild(notesTab);
+  tabBar.appendChild(planetsTab);
   frag.appendChild(tabBar);
 
   // ── Tab content ──
   if(UI.tab==='notes'){
     frag.appendChild(buildNotesTab());
     app.appendChild(frag);
-    // focus notes search
     setTimeout(()=>{const s=document.getElementById('notes-search');if(s&&!UI.notesSearch)s.focus();},60);
+    return;
+  }
+  if(UI.tab==='planets'){
+    frag.appendChild(buildPlanetsTab());
+    app.appendChild(frag);
+    drawMap();
     return;
   }
 
@@ -1087,7 +1188,7 @@ function render(){
   searchWrap.appendChild(si);
   frag.appendChild(searchWrap);
 
-  // Filter + sort bar
+  // Filter row
   const fb=el('div',{class:'filter-bar'});
   fb.appendChild(el('span',{class:'label'},'Filter:'));
   const rPill=el('button',{class:'fpill warn'+(UI.filterRevisit?' on':'')},'Revisit (C5+)');
@@ -1100,20 +1201,18 @@ function render(){
   tPill.addEventListener('click',()=>{UI.filterTreasure=!UI.filterTreasure;renderList();tPill.className='fpill'+(UI.filterTreasure?' on':'');});
   const hwPill=el('button',{class:'fpill'+(UI.filterHomeworld?' on':'')},'Homeworld');
   hwPill.addEventListener('click',()=>{UI.filterHomeworld=!UI.filterHomeworld;renderList();hwPill.className='fpill'+(UI.filterHomeworld?' on':'');});
-  fb.appendChild(rPill);
-  fb.appendChild(bPill);
-  fb.appendChild(nPill);
-  fb.appendChild(tPill);
-  fb.appendChild(hwPill);
-  fb.appendChild(el('div',{class:'sort-sep'}));
-  fb.appendChild(el('span',{class:'label'},'Sort:'));
-  [['name','A–Z'],['dist','Distance'],['cargo','Cargo']].forEach(([val,lbl])=>{
-    const p=el('button',{class:'fpill'+(UI.sortBy===val?' on':'')},lbl);
-    p.addEventListener('click',()=>{UI.sortBy=val;renderList();document.querySelectorAll('.sort-pill').forEach(x=>x.className='fpill sort-pill');p.className='fpill on sort-pill';});
-    p.classList.add('sort-pill');
-    fb.appendChild(p);
-  });
+  fb.appendChild(rPill);fb.appendChild(bPill);fb.appendChild(nPill);fb.appendChild(tPill);fb.appendChild(hwPill);
   frag.appendChild(fb);
+
+  // Sort row
+  const sb=el('div',{class:'filter-bar'});
+  sb.appendChild(el('span',{class:'label'},'Sort:'));
+  [['name','A–Z'],['dist','Distance'],['cargo','Cargo']].forEach(([val,lbl])=>{
+    const p=el('button',{class:'fpill sort-pill'+(UI.sortBy===val?' on':'')},lbl);
+    p.addEventListener('click',()=>{UI.sortBy=val;renderList();document.querySelectorAll('.sort-pill').forEach(x=>x.className='fpill sort-pill');p.className='fpill sort-pill on';});
+    sb.appendChild(p);
+  });
+  frag.appendChild(sb);
 
   // Add system form
   if(UI.addSys){
