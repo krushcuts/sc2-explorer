@@ -182,6 +182,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .confirm-msg{font-size:15px;margin-bottom:16px;line-height:1.5}
 .confirm-btns{display:flex;gap:8px}
 .confirm-btns button{flex:1}
+.form-error{display:none;font-size:13px;color:var(--bad-tx);background:var(--bad-bg);border:.5px solid var(--bad-bdr);border-radius:var(--rs);padding:9px 12px;margin-bottom:10px;line-height:1.4}
 
 .tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:.5px solid var(--bdr2)}
 .tab{font-size:14px;font-weight:500;padding:10px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;border-radius:0;transition:color .15s}
@@ -209,7 +210,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Acid','Airless Rock','Alkali','Carbon','Gas Giant','Icy','Metal World','Noble World','Oolite World','Quasi-Degenerate World','Radioactive','Reducing','Shattered','Super Dense','Telluric','Treasure World','Water World','Yttric World','Unknown'];
+const PLANET_TYPES = ['Acidic World','Airless Rock','Alkali','Carbide World','Chondrite World','Copper World','Dust World','Gas Giant','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Purple World','Quasi-Degenerate World','Radioactive','Reducing','Redux World','Selenic World','Shattered','Super Dense','Telluric','Treasure World','Ultramarine World','Urea World','Water World','Xenolithic World','Yttric World','Unknown'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -247,6 +248,11 @@ function confirmDialog(msg, onConfirm){
   bg.appendChild(box);
   bg.addEventListener('click',e=>{if(e.target===bg) bg.remove();});
   document.body.appendChild(bg);
+}
+
+function showFormError(id, msg){
+  const el_=document.getElementById(id);
+  if(el_){el_.textContent=msg;el_.style.display='block';}
 }
 
 function getFiltered(){
@@ -297,8 +303,15 @@ function toggleTheme(){
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
-function distSol(x,y){return Math.round(Math.sqrt(Math.pow(x-SOL_X,2)+Math.pow(y-SOL_Y,2))*10)/10}
-function fuelDist(x,y){return Math.round(distSol(x,y)/10*10)/10}
+function distSol(x,y){
+  if(x===''||y===''||x==null||y==null) return '—';
+  return Math.round(Math.sqrt(Math.pow(x-SOL_X,2)+Math.pow(y-SOL_Y,2))*10)/10;
+}
+function fuelDist(x,y){
+  const d=distSol(x,y);
+  if(d==='—') return '—';
+  return Math.round(d/10*10)/10;
+}
 function cargoClass(v){if(v<=0) return 'c-low'; return v===25?'c-high':v>=6?'c-high':v>=3?'c-mid':'c-low'}
 function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>=3?'mid':'low'}
 
@@ -358,6 +371,11 @@ function resourceBadge(v){
 
 // ── CRUD ──────────────────────────────────────────────────────────
 function addSys(d){
+  const dupe=S.systems.find(s=>s.name.trim().toLowerCase()===d.name.trim().toLowerCase());
+  if(dupe){
+    showFormError('sys-form-error','A star system named "'+d.name.trim()+'" already exists.');
+    return;
+  }
   const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toLocaleDateString(),planets:[]};
   S.systems.push(s); persist(); UI.addSys=false; UI.sel=s.id; render();
 }
@@ -375,6 +393,13 @@ function delSys(id){
 function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:'',moons:[]}}
 function addPlanet(sysId,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
+  if(d.order){
+    const dupe=s.planets.find(p=>p.order&&p.order===+d.order);
+    if(dupe){
+      showFormError('planet-form-error','Planet '+d.order+' already exists in this system.');
+      return;
+    }
+  }
   const moonData=d._moon; delete d._moon;
   const planet={...bodyDefaults(),...d,id:uid(),moons:[]};
   if(moonData) planet.moons.push({...bodyDefaults(),...moonData,id:uid()});
@@ -439,6 +464,10 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   notesTA.addEventListener('input',e=>d.notes=e.target.value);
   box.appendChild(field('Notes',notesTA));
 
+  if(bodyKind==='planet'){
+    box.appendChild(el('div',{class:'form-error',id:'planet-form-error'}));
+  }
+
   // Optional inline moon (planet form only)
   let moonData=null;
   if(bodyKind==='planet'){
@@ -481,8 +510,10 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
 
 // ── System Form ───────────────────────────────────────────────────
 function sysForm(existing,onSave,onCancel){
-  const d={name:'',x:500,y:500,starColor:STAR_COLORS[0],faction:'—',notes:'',...existing};
+  const d={name:'',x:'',y:'',starColor:STAR_COLORS[0],faction:'—',notes:'',...existing};
   const box=el('div',{class:'form-box'},el('div',{class:'form-title'},existing?'Edit star system':'Log new star system'));
+
+  box.appendChild(el('div',{class:'form-error',id:'sys-form-error'}));
 
   const nameInp=mkInp('text',d.name,v=>d.name=v,{placeholder:'e.g. Vega'});
   box.appendChild(field('Star system name',nameInp));
@@ -494,8 +525,8 @@ function sysForm(existing,onSave,onCancel){
   box.appendChild(g2a);
 
   const g=el('div',{class:'g2'});
-  const xInp=mkInp('number',d.x,v=>d.x=Math.round(parseFloat(v)*10)/10||0,{inputmode:'decimal',min:'0',max:'1000',step:'0.1',placeholder:'e.g. 290.8'});
-  const yInp=mkInp('number',d.y,v=>d.y=Math.round(parseFloat(v)*10)/10||0,{inputmode:'decimal',min:'0',max:'1000',step:'0.1',placeholder:'e.g. 26.9'});
+  const xInp=mkInp('number',d.x,v=>d.x=v===''?'':Math.round(parseFloat(v)*10)/10,{inputmode:'decimal',min:'0',max:'1000',step:'0.1',placeholder:'e.g. 290.8'});
+  const yInp=mkInp('number',d.y,v=>d.y=v===''?'':Math.round(parseFloat(v)*10)/10,{inputmode:'decimal',min:'0',max:'1000',step:'0.1',placeholder:'e.g. 26.9'});
   g.appendChild(el('div',{},el('label',{},'X coord'),xInp));
   g.appendChild(el('div',{},el('label',{},'Y coord'),yInp));
   box.appendChild(g);
