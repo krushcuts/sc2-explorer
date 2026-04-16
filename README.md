@@ -162,13 +162,18 @@ Data is stored as JSON in the browser's `localStorage` on your device under the 
 ### Planet Types
 | Type | Type | Type |
 |---|---|---|
-| Acid | Airless Rock | Alkali |
-| Carbon | Gas Giant | Icy |
-| Metal World | Noble World | Oolite World |
+| Acidic World | Airless Rock | Alkali |
+| Carbide World | Chondrite World | Copper World |
+| Dust World | Gas Giant | Halide World |
+| Icy | Infrared World | Iodine World |
+| Lanthanide World | Metal World | Noble World |
+| Oolite World | Opalescent World | Organic World |
+| Pellucid World | Plutonic World | Purple World |
 | Quasi-Degenerate World | Radioactive | Reducing |
-| Shattered | Super Dense | Telluric |
-| Treasure World | Water World | Yttric World |
-| Unknown | | |
+| Redux World | Selenic World | Shattered |
+| Super Dense | Telluric | Treasure World |
+| Ultramarine World | Urea World | Water World |
+| Xenolithic World | Yttric World | Unknown |
 
 ### Resource Values
 | Value | Name | Notes |
