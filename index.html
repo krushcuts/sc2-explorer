@@ -841,14 +841,24 @@ function sysCard(sys){
   const isOpen=UI.sel===sys.id;
   const dist=distSol(sys.x,sys.y);
   const fuel=fuelDist(sys.x,sys.y);
+  const fd=typeof fuel==='number'?fuel:0;
+  const allBodiesForScore=[...sys.planets,...sys.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+  const sysScore=allBodiesForScore.length>0?Math.max(...allBodiesForScore.map(b=>visitScore(b,fd))):null;
+  const sysBand=sysScore!==null?visitBand(sysScore):null;
+
   const card=el('div',{class:'sys-card'+(isOpen?' open':''),'data-sys':sys.id});
 
   const delBtn=el('button',{class:'btn-del'},'✕');
   delBtn.addEventListener('click',e=>{e.stopPropagation();delSys(sys.id);});
 
+  const nameRow=el('div',{style:{display:'flex',alignItems:'baseline',gap:'6px'}},
+    el('div',{class:'sys-name'},sys.name),
+    sysScore!==null?el('span',{class:'tag tag-'+(sysBand.cls||''),style:{fontSize:'10px',fontWeight:'700',verticalAlign:'middle'}},String(sysScore)):null
+  );
+
   const hdr=el('div',{class:'sys-header'},
     el('div',{style:{flex:'1'}},
-      el('div',{class:'sys-name'},sys.name),
+      nameRow,
       el('div',{class:'sys-meta'},`(${sys.x}, ${sys.y}) · ${dist} dist · ${fuel} fuel`)
     ),
     el('span',{class:'chevron'},isOpen?'▲':'▼'),
@@ -1239,11 +1249,9 @@ function buildPlanetsTab(){
   return frag;
 }
 
-// ── Tools Tab ─────────────────────────────────────────────────────
-function buildToolsTab(){
+// ── Calculator Tab ────────────────────────────────────────────────
+function buildCalculatorTab(){
   const frag=document.createDocumentFragment();
-
-  // ── Visit Calculator ──
   const calcSection=el('div',{class:'tools-section'});
   calcSection.appendChild(el('div',{class:'tools-section-title'},'Visit Calculator'));
 
@@ -1256,50 +1264,46 @@ function buildToolsTab(){
   calcSection.appendChild(display);
 
   function recalc(){
-    const fd = parseFloat(state.fuel)||0;
-    const b = {cargoValue:state.cargoValue, bioLifeforms:state.bio, weather:state.weather, tectonics:state.tectonics, temperature:state.temperature};
-    const vs = visitScore(b, fd);
-    const band = visitBand(vs);
-    scoreEl.textContent = String(vs);
-    bandEl.textContent = band.label;
-    bandEl.className = band.cls ? 'tag tag-'+band.cls : 'tag';
-    // breakdown
-    const ms = CARGO_SCORE[state.cargoValue]||0;
-    const bs = state.bio?15:0;
-    const fp = Math.round(fd*0.5);
-    const hp = (state.weather+state.tectonics)*4;
+    const fd=parseFloat(state.fuel)||0;
+    const b={cargoValue:state.cargoValue,bioLifeforms:state.bio,weather:state.weather,tectonics:state.tectonics,temperature:state.temperature};
+    const vs=visitScore(b,fd);
+    const band=visitBand(vs);
+    scoreEl.textContent=String(vs);
+    bandEl.textContent=band.label;
+    bandEl.className=band.cls?'tag tag-'+band.cls:'tag';
+    const ms=CARGO_SCORE[state.cargoValue]||0;
+    const bs=state.bio?15:0;
+    const fp=Math.round(fd*0.5);
+    const hp=(state.weather+state.tectonics)*4;
     const temp=parseFloat(state.temperature);
-    const tp = !isNaN(temp)?(temp>=2000?30:temp>=1000?20:temp>=500?10:temp<-200?5:0):0;
-    detailEl.textContent = `Mineral +${ms}  Bio +${bs}  Fuel −${fp}  Hazard −${hp}  Temp −${tp}`;
+    const tp=!isNaN(temp)?(temp>=2000?30:temp>=1000?20:temp>=500?10:temp<-200?5:0):0;
+    detailEl.textContent=`Mineral +${ms}  Bio +${bs}  Fuel −${fp}  Hazard −${hp}  Temp −${tp}`;
   }
 
   const grid=el('div',{class:'calc-grid'});
   const cargoSel=mkSel(CARGO_OPTS,CARGO_LBL,state.cargoValue,v=>{state.cargoValue=+v;recalc();});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Max resource'),cargoSel));
-
   const bioSel=mkSel(['No','Yes'],null,'No',v=>{state.bio=v==='Yes';recalc();});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Bio lifeforms'),bioSel));
-
   const wSel=mkSel(HAZ,null,0,v=>{state.weather=+v;recalc();});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Weather'),wSel));
-
   const tSel=mkSel(HAZ,null,0,v=>{state.tectonics=+v;recalc();});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Tectonics'),tSel));
-
-  const tempInp=mkInp('number','',v=>{state.temperature=v;recalc()},{placeholder:'e.g. 220'});
+  const tempInp=mkInp('number','',v=>{state.temperature=v;recalc();},{placeholder:'e.g. 220'});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Temperature'),tempInp));
-
-  const fuelInp=mkInp('number','',v=>{state.fuel=v;recalc()},{placeholder:'e.g. 16.5',inputmode:'decimal'});
+  const fuelInp=mkInp('number','',v=>{state.fuel=v;recalc();},{placeholder:'e.g. 16.5',inputmode:'decimal'});
   grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Fuel distance'),fuelInp));
-
   calcSection.appendChild(grid);
 
-  const hint=el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'4px',lineHeight:'1.6'}});
-  hint.textContent='Score 70–100 High Priority · 50–69 Worth Visiting · 30–49 Marginal · 10–29 Low Priority · 0–9 Skip';
-  calcSection.appendChild(hint);
+  calcSection.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'4px',lineHeight:'1.6'}},
+    '70–100 High Priority · 50–69 Worth Visiting · 30–49 Marginal · 10–29 Low Priority · 0–9 Skip'));
   frag.appendChild(calcSection);
+  return frag;
+}
 
-  // ── Minerals Reference ──
+// ── Minerals Tab ──────────────────────────────────────────────────
+function buildMineralsTab(){
+  const frag=document.createDocumentFragment();
   const minSection=el('div',{class:'tools-section'});
   minSection.appendChild(el('div',{class:'tools-section-title'},'Minerals Reference'));
 
@@ -1316,9 +1320,7 @@ function buildToolsTab(){
       return;
     }
     const table=el('table',{class:'min-table'});
-    table.appendChild(el('thead',{},el('tr',{},
-      el('th',{},'Mineral'),el('th',{},'Category'),el('th',{},'RU Value')
-    )));
+    table.appendChild(el('thead',{},el('tr',{},el('th',{},'Mineral'),el('th',{},'Category'),el('th',{},'RU Value'))));
     const tbody=el('tbody',{});
     filtered.forEach(m=>{
       const valClass=m.val===25?'c-high':m.val>=6?'c-high':m.val>=3?'c-mid':'c-low';
@@ -1336,9 +1338,8 @@ function buildToolsTab(){
   renderMinerals();
   minSection.appendChild(minSearch);
   minSection.appendChild(minTableWrap);
-  minSection.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'6px'}},`${MINERALS.length} minerals · sorted by category`));
+  minSection.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'6px'}},`${MINERALS.length} minerals`));
   frag.appendChild(minSection);
-
   return frag;
 }
 
@@ -1391,12 +1392,15 @@ function render(){
   notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
   const planetsTab=el('button',{class:'tab'+(UI.tab==='planets'?' on':'')},'Planets Visited');
   planetsTab.addEventListener('click',()=>{UI.tab='planets';render();});
-  const toolsTab=el('button',{class:'tab'+(UI.tab==='tools'?' on':'')},'Tools');
+  const toolsTab=el('button',{class:'tab'+(UI.tab==='tools'?' on':'')},'Calculator');
   toolsTab.addEventListener('click',()=>{UI.tab='tools';render();});
+  const mineralsTab=el('button',{class:'tab'+(UI.tab==='minerals'?' on':'')},'Minerals');
+  mineralsTab.addEventListener('click',()=>{UI.tab='minerals';render();});
   tabBar.appendChild(sysTab);
   tabBar.appendChild(notesTab);
   tabBar.appendChild(planetsTab);
   tabBar.appendChild(toolsTab);
+  tabBar.appendChild(mineralsTab);
   frag.appendChild(tabBar);
 
   // ── Tab content ──
@@ -1413,7 +1417,12 @@ function render(){
     return;
   }
   if(UI.tab==='tools'){
-    frag.appendChild(buildToolsTab());
+    frag.appendChild(buildCalculatorTab());
+    app.appendChild(frag);
+    return;
+  }
+  if(UI.tab==='minerals'){
+    frag.appendChild(buildMineralsTab());
     app.appendChild(frag);
     return;
   }
