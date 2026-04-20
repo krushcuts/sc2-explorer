@@ -1,17 +1,6 @@
 {
   "systems": [
     {
-      "id": "mnz4d8h92ts",
-      "name": "Delta Gorno",
-      "x": 100,
-      "y": 500,
-      "starColor": "Yellow",
-      "notes": "",
-      "addedAt": "4/14/2026",
-      "planets": [],
-      "faction": "—"
-    },
-    {
       "id": "mnzg9qfx22k",
       "name": "Deneb",
       "x": 218.7,
@@ -266,7 +255,7 @@
       "planets": [
         {
           "id": "mo0l8dbp5ae",
-          "type": "Acid",
+          "type": "Acid World",
           "order": 2,
           "weather": 0,
           "tectonics": 0,
@@ -381,7 +370,7 @@
       "planets": [
         {
           "id": "mo0nl31kddg",
-          "type": "Reducing",
+          "type": "Redux World",
           "order": 4,
           "weather": 0,
           "tectonics": 4,
@@ -389,7 +378,7 @@
           "cargoValue": 3,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Redux World",
+          "notes": "",
           "moons": []
         },
         {
@@ -419,7 +408,7 @@
           "moons": [
             {
               "id": "mo0nsjs7y1p",
-              "type": "Unknown",
+              "type": "Urea World",
               "order": 1,
               "weather": 8,
               "tectonics": 5,
@@ -427,7 +416,7 @@
               "cargoValue": 0,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Urea World",
+              "notes": "",
               "moons": []
             }
           ]
@@ -473,7 +462,7 @@
       "planets": [
         {
           "id": "mo0o1c7k2o2",
-          "type": "Unknown",
+          "type": "Selenic World",
           "order": 3,
           "weather": 0,
           "tectonics": 2,
@@ -481,7 +470,7 @@
           "cargoValue": 3,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Selenic World",
+          "notes": "",
           "moons": []
         },
         {
@@ -498,7 +487,7 @@
           "moons": [
             {
               "id": "mo0o44zl5j2",
-              "type": "Unknown",
+              "type": "Ultramarine World",
               "order": 1,
               "weather": 3,
               "tectonics": 1,
@@ -506,7 +495,7 @@
               "cargoValue": 5,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Ultramarine World",
+              "notes": "",
               "moons": []
             }
           ]
@@ -538,7 +527,7 @@
           "moons": [
             {
               "id": "mo11iuiif0p",
-              "type": "Unknown",
+              "type": "Infrared World",
               "order": 1,
               "weather": 3,
               "tectonics": 2,
@@ -546,12 +535,12 @@
               "cargoValue": 3,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Infrared World",
+              "notes": "",
               "moons": []
             },
             {
               "id": "mo11kmytu2g",
-              "type": "Unknown",
+              "type": "Dust World",
               "order": 2,
               "weather": 2,
               "tectonics": 4,
@@ -559,14 +548,14 @@
               "cargoValue": 3,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Dust World",
+              "notes": "",
               "moons": []
             }
           ]
         },
         {
           "id": "mo11n8s6me6",
-          "type": "Unknown",
+          "type": "Chondrite World",
           "order": 5,
           "weather": 0,
           "tectonics": 5,
@@ -574,12 +563,12 @@
           "cargoValue": 1,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Chondrite World",
+          "notes": "",
           "moons": []
         },
         {
           "id": "mo11rp9ujsj",
-          "type": "Unknown",
+          "type": "Ultramarine World",
           "order": 5,
           "weather": 2,
           "tectonics": 1,
@@ -587,7 +576,7 @@
           "cargoValue": 4,
           "bioLifeforms": true,
           "homeworld": false,
-          "notes": "Ultramarine ",
+          "notes": "",
           "moons": []
         }
       ]
@@ -864,7 +853,7 @@
             },
             {
               "id": "mo1374c78f2",
-              "type": "Unknown",
+              "type": "Ultramarine World",
               "order": 1,
               "weather": 2,
               "tectonics": 1,
@@ -872,7 +861,7 @@
               "cargoValue": 4,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Ultramarine ",
+              "notes": "",
               "moons": []
             }
           ]
@@ -929,7 +918,7 @@
         },
         {
           "id": "mo142lwql54",
-          "type": "Unknown",
+          "type": "Opalescent World",
           "order": 5,
           "weather": 0,
           "tectonics": 4,
@@ -937,7 +926,7 @@
           "cargoValue": 5,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Opalescent",
+          "notes": "",
           "moons": []
         },
         {
@@ -954,7 +943,7 @@
           "moons": [
             {
               "id": "mo1466sregg",
-              "type": "Unknown",
+              "type": "Copper World",
               "order": 1,
               "weather": 2,
               "tectonics": 3,
@@ -962,14 +951,14 @@
               "cargoValue": 3,
               "bioLifeforms": false,
               "homeworld": false,
-              "notes": "Copper World",
+              "notes": "",
               "moons": []
             }
           ]
         },
         {
           "id": "mo149vv4lho",
-          "type": "Unknown",
+          "type": "Xenolithic World",
           "order": 3,
           "weather": 2,
           "tectonics": 2,
@@ -977,7 +966,7 @@
           "cargoValue": 6,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Xenolithic",
+          "notes": "",
           "moons": []
         },
         {
@@ -995,7 +984,7 @@
         },
         {
           "id": "mo14f926zk8",
-          "type": "Unknown",
+          "type": "Ultramarine World",
           "order": 1,
           "weather": 4,
           "tectonics": 1,
@@ -1003,7 +992,7 @@
           "cargoValue": 5,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Ultramarine",
+          "notes": "",
           "moons": []
         }
       ]
@@ -1020,7 +1009,7 @@
       "planets": [
         {
           "id": "mo14ldxlm6p",
-          "type": "Unknown",
+          "type": "Pellucid World",
           "order": 3,
           "weather": 3,
           "tectonics": 2,
@@ -1028,7 +1017,7 @@
           "cargoValue": 25,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Pellucid World",
+          "notes": "",
           "moons": []
         },
         {
@@ -1085,7 +1074,7 @@
         },
         {
           "id": "mo14wo186s4",
-          "type": "Acid",
+          "type": "Acid World",
           "order": 6,
           "weather": 2,
           "tectonics": 4,
@@ -1106,11 +1095,11 @@
           "cargoValue": 0,
           "bioLifeforms": false,
           "homeworld": false,
-          "notes": "Urea World",
+          "notes": "",
           "moons": [
             {
               "id": "mo14zg21qle",
-              "type": "Unknown",
+              "type": "Urea World",
               "order": 3,
               "weather": 4,
               "tectonics": 7,
@@ -1118,17 +1107,17 @@
               "cargoValue": 0,
               "bioLifeforms": true,
               "homeworld": false,
-              "notes": "Urea World",
+              "notes": "",
               "moons": []
             },
             {
               "id": "mo151hrbf51",
-              "type": "Alkali",
+              "type": "Alkali World",
               "order": 1,
               "weather": 2,
               "tectonics": 4,
               "temperature": "30",
-              "cargoValue": 0,
+              "cargoValue": 3,
               "bioLifeforms": true,
               "homeworld": false,
               "notes": "",
@@ -1137,7 +1126,7 @@
             {
               "id": "mo155a6ful2",
               "type": "Radioactive",
-              "order": 3,
+              "order": 2,
               "weather": 1,
               "tectonics": 2,
               "temperature": "-7",
@@ -1148,6 +1137,199 @@
               "moons": []
             }
           ]
+        },
+        {
+          "id": "mo7hhllq9jr",
+          "type": "Unknown",
+          "order": 8,
+          "weather": 0,
+          "tectonics": 8,
+          "temperature": "-42",
+          "cargoValue": 0,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "Magma World ",
+          "moons": []
+        }
+      ]
+    },
+    {
+      "id": "mo7ho6ar1ok",
+      "name": "Delta Giclas",
+      "x": 87.7,
+      "y": 34,
+      "starColor": "Yellow",
+      "faction": "—",
+      "notes": "",
+      "addedAt": "4/20/2026",
+      "planets": [
+        {
+          "id": "mo7hp2rf04t",
+          "type": "Metal World",
+          "order": 8,
+          "weather": 2,
+          "tectonics": 2,
+          "temperature": "-209",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7hqskjtd5",
+          "type": "Carbide World",
+          "order": 6,
+          "weather": 0,
+          "tectonics": 2,
+          "temperature": "-190",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7hsdxztre",
+          "type": "Unknown",
+          "order": 1,
+          "weather": 6,
+          "tectonics": 8,
+          "temperature": "72",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "Primordial World",
+          "moons": []
+        },
+        {
+          "id": "mo7hvqksvnm",
+          "type": "Metal World",
+          "order": 2,
+          "weather": 3,
+          "tectonics": 3,
+          "temperature": "-125",
+          "cargoValue": 8,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7i0a9goer",
+          "type": "Unknown",
+          "order": 3,
+          "weather": 3,
+          "tectonics": 4,
+          "temperature": "-158",
+          "cargoValue": 5,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "Green world",
+          "moons": []
+        },
+        {
+          "id": "mo7i5l8tr5u",
+          "type": "Purple World",
+          "order": 5,
+          "weather": 0,
+          "tectonics": 4,
+          "temperature": "-185",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        }
+      ]
+    },
+    {
+      "id": "mo7iir2fa1h",
+      "name": "Regulus",
+      "x": 373.2,
+      "y": 106.7,
+      "starColor": "Yellow",
+      "faction": "—",
+      "notes": "",
+      "addedAt": "4/20/2026",
+      "planets": [
+        {
+          "id": "mo7il3zjxci",
+          "type": "Noble World",
+          "order": 3,
+          "weather": 0,
+          "tectonics": 3,
+          "temperature": "-118",
+          "cargoValue": 4,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7irf1ge7g",
+          "type": "Super Dense",
+          "order": 2,
+          "weather": 3,
+          "tectonics": 6,
+          "temperature": "-74",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7j4vfu16a",
+          "type": "Carbide World",
+          "order": 1,
+          "weather": 3,
+          "tectonics": 3,
+          "temperature": "29",
+          "cargoValue": 1,
+          "bioLifeforms": true,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7j5vqzz2k",
+          "type": "Carbide World",
+          "order": 5,
+          "weather": 0,
+          "tectonics": 2,
+          "temperature": "-155",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7jcnu47vu",
+          "type": "Purple World",
+          "order": 4,
+          "weather": 0,
+          "tectonics": 4,
+          "temperature": "-145",
+          "cargoValue": 3,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7jgznhxli",
+          "type": "Xenolithic World",
+          "order": 6,
+          "weather": 2,
+          "tectonics": 3,
+          "temperature": "-164",
+          "cargoValue": 6,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
         }
       ]
     }
