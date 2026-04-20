@@ -250,7 +250,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Acid World','Airless Rock','Alkali World','Carbide World','Chondrite World','Copper World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Radioactive','Reducing','Redux World','Selenic World','Shattered','Super Dense','Telluric','Treasure World','Ultramarine World','Urea World','Water World','Xenolithic World','Yttric World','Unknown'];
+const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Carbide World','Chlorine World','Chondrite World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Water World','Xenolithic World','Yttric World'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -266,10 +266,11 @@ const MINERALS = [
   {name:'Oxygen',      cat:'Common',         val:1},
   {name:'Silicon',     cat:'Common',         val:1},
   {name:'Sulfur',      cat:'Common',         val:1},
-  {name:'Chlorine',    cat:'Common',         val:1},
   {name:'Fluorine',    cat:'Common',         val:1},
   {name:'Phosphorus',  cat:'Common',         val:1},
   {name:'Boron',       cat:'Common',         val:1},
+  {name:'Chlorine',    cat:'Common',         val:1},
+  {name:'Hydrochloric Acid',cat:'Common',    val:1},
   // Corrosive (2)
   {name:'Ammonia',     cat:'Corrosive',      val:2},
   {name:'Methane',     cat:'Corrosive',      val:2},
@@ -277,7 +278,12 @@ const MINERALS = [
   {name:'Formaldehyde',cat:'Corrosive',      val:2},
   {name:'Cyanogen',    cat:'Corrosive',      val:2},
   {name:'Hydrazine',   cat:'Corrosive',      val:2},
+  {name:'Bromine',     cat:'Corrosive',      val:2},
+  {name:'Iodine',      cat:'Corrosive',      val:2},
   // Base Metal (3)
+  {name:'Barium',      cat:'Base Metal',     val:3},
+  {name:'Beryllium',   cat:'Base Metal',     val:3},
+  {name:'Bismuth',     cat:'Base Metal',     val:3},
   {name:'Iron',        cat:'Base Metal',     val:3},
   {name:'Nickel',      cat:'Base Metal',     val:3},
   {name:'Cobalt',      cat:'Base Metal',     val:3},
@@ -290,6 +296,7 @@ const MINERALS = [
   {name:'Titanium',    cat:'Base Metal',     val:3},
   {name:'Aluminum',    cat:'Base Metal',     val:3},
   {name:'Magnesium',   cat:'Base Metal',     val:3},
+  {name:'Mercury',     cat:'Base Metal',     val:3},
   // Noble Gas (4)
   {name:'Helium',      cat:'Noble Gas',      val:4},
   {name:'Neon',        cat:'Noble Gas',      val:4},
@@ -304,6 +311,7 @@ const MINERALS = [
   {name:'Samarium',    cat:'Rare Earth',     val:5},
   {name:'Europium',    cat:'Rare Earth',     val:5},
   {name:'Gadolinium',  cat:'Rare Earth',     val:5},
+  {name:'Holmium',     cat:'Rare Earth',     val:5},
   {name:'Terbium',     cat:'Rare Earth',     val:5},
   {name:'Dysprosium',  cat:'Rare Earth',     val:5},
   {name:'Yttrium',     cat:'Rare Earth',     val:5},
@@ -330,6 +338,7 @@ const MINERALS = [
   {name:'Neutronium',  cat:'Exotic',         val:25},
   {name:'Strange Matter',cat:'Exotic',       val:25},
   {name:'Quantum Crystals',cat:'Exotic',     val:25},
+  {name:'Tzo Crystals', cat:'Exotic',        val:25},
   {name:'Exotica',     cat:'Exotic',         val:25},
 ];
 
@@ -356,6 +365,18 @@ function visitBand(score){
   if(score >= 30) return {label:'Marginal', cls:'warn'};
   if(score >= 10) return {label:'Low Priority', cls:''};
   return {label:'Skip', cls:'bad'};
+}
+// System-level score: blends best single body (60%) with aggregate mineral wealth (40%)
+// Aggregate is fuel-independent — if you're visiting, travel cost is already paid
+const RICHNESS_CEILING = 300; // ~4 Precious Metal planets saturates this
+function sysVisitScore(sys){
+  const fd=typeof fuelDist(sys.x,sys.y)==='number'?fuelDist(sys.x,sys.y):0;
+  const bodies=[...sys.planets,...sys.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
+  if(!bodies.length) return null;
+  const best=Math.max(...bodies.map(b=>visitScore(b,fd)));
+  const mineralSum=bodies.reduce((s,b)=>s+(CARGO_SCORE[b.cargoValue]||0),0);
+  const aggScore=Math.min(100,Math.round(mineralSum/RICHNESS_CEILING*100));
+  return Math.min(100,Math.round(best*0.60+aggScore*0.40));
 }
 const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
@@ -423,8 +444,7 @@ function getFiltered(){
     return maxC(b)-maxC(a);
   });
   else if(UI.sortBy==='score') list.sort((a,b)=>{
-    const sysScore=s=>{const fd=typeof fuelDist(s.x,s.y)==='number'?fuelDist(s.x,s.y):0;const bodies=[...s.planets,...s.planets.reduce((ac,p)=>ac.concat(p.moons||[]),[])];return bodies.length?Math.max(...bodies.map(bd=>visitScore(bd,fd))):0;};
-    return sysScore(b)-sysScore(a);
+    return (sysVisitScore(b)||0)-(sysVisitScore(a)||0);
   });
   else list.sort((a,b)=>a.name.localeCompare(b.name));
   return list;
@@ -853,8 +873,7 @@ function sysCard(sys){
   const dist=distSol(sys.x,sys.y);
   const fuel=fuelDist(sys.x,sys.y);
   const fd=typeof fuel==='number'?fuel:0;
-  const allBodiesForScore=[...sys.planets,...sys.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
-  const sysScore=allBodiesForScore.length>0?Math.max(...allBodiesForScore.map(b=>visitScore(b,fd))):null;
+  const sysScore=sysVisitScore(sys);
   const sysBand=sysScore!==null?visitBand(sysScore):null;
 
   const card=el('div',{class:'sys-card'+(isOpen?' open':''),'data-sys':sys.id});
