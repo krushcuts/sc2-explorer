@@ -214,6 +214,25 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 .gh-banner-icon{font-size:14px;color:var(--ok-tx);flex-shrink:0}
 .gh-banner-label{font-size:12px;color:var(--ok-tx);font-weight:600;flex-shrink:0}
 .gh-banner-ts{font-size:12px;color:var(--ok-tx);font-family:monospace}
+
+.tag-ok{background:var(--ok-bg);color:var(--ok-tx)}
+.tag-info{background:var(--info-bg);color:var(--info-tx)}
+.tag-warn{background:var(--warn-bg);color:var(--warn-tx)}
+.tag-bad{background:var(--bad-bg);color:var(--bad-tx)}
+
+.tools-section{margin-bottom:24px}
+.tools-section-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:.5px solid var(--bdr)}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:400px){.calc-grid{grid-template-columns:1fr}}
+.score-display{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r);border:.5px solid var(--bdr2);background:var(--bg2);margin-top:4px}
+.score-big{font-size:36px;font-weight:700;font-family:monospace;line-height:1;flex-shrink:0}
+.score-detail{font-size:12px;color:var(--text2);line-height:1.7}
+.minerals-search{margin-bottom:10px}
+.min-table{width:100%;border-collapse:collapse;font-size:13px}
+.min-table th{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:.5px solid var(--bdr2);text-align:left;background:var(--bg)}
+.min-table td{padding:7px 8px;border-bottom:.5px solid var(--bdr);color:var(--text)}
+.min-table tr:last-child td{border-bottom:none}
+.min-wrap{border:.5px solid var(--bdr);border-radius:var(--rs);overflow:hidden}
 </style>
 </head>
 <body>
@@ -230,6 +249,107 @@ const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
 const CARGO_LBL    = ['— unsurveyed','N/A – None','1 – Common','2 – Corrosive','3 – Base Metal','4 – Noble Gas','5 – Rare Earth','6 – Precious Metal','8 – Radioactive','25 – Exotic'];
 const RESOURCE_NAME = {0:'—','-1':'N/A',1:'Common',2:'Corrosive',3:'Base Metal',4:'Noble Gas',5:'Rare Earth',6:'Precious Metal',8:'Radioactive',25:'Exotic'};
+
+// ── Minerals database (name → category → RU value) ────────────────
+const MINERALS = [
+  // Common (1)
+  {name:'Carbon',      cat:'Common',         val:1},
+  {name:'Hydrogen',    cat:'Common',         val:1},
+  {name:'Nitrogen',    cat:'Common',         val:1},
+  {name:'Oxygen',      cat:'Common',         val:1},
+  {name:'Silicon',     cat:'Common',         val:1},
+  {name:'Sulfur',      cat:'Common',         val:1},
+  {name:'Chlorine',    cat:'Common',         val:1},
+  {name:'Fluorine',    cat:'Common',         val:1},
+  {name:'Phosphorus',  cat:'Common',         val:1},
+  {name:'Boron',       cat:'Common',         val:1},
+  // Corrosive (2)
+  {name:'Ammonia',     cat:'Corrosive',      val:2},
+  {name:'Methane',     cat:'Corrosive',      val:2},
+  {name:'Ethane',      cat:'Corrosive',      val:2},
+  {name:'Formaldehyde',cat:'Corrosive',      val:2},
+  {name:'Cyanogen',    cat:'Corrosive',      val:2},
+  {name:'Hydrazine',   cat:'Corrosive',      val:2},
+  // Base Metal (3)
+  {name:'Iron',        cat:'Base Metal',     val:3},
+  {name:'Nickel',      cat:'Base Metal',     val:3},
+  {name:'Cobalt',      cat:'Base Metal',     val:3},
+  {name:'Copper',      cat:'Base Metal',     val:3},
+  {name:'Zinc',        cat:'Base Metal',     val:3},
+  {name:'Lead',        cat:'Base Metal',     val:3},
+  {name:'Tin',         cat:'Base Metal',     val:3},
+  {name:'Manganese',   cat:'Base Metal',     val:3},
+  {name:'Chromium',    cat:'Base Metal',     val:3},
+  {name:'Titanium',    cat:'Base Metal',     val:3},
+  {name:'Aluminum',    cat:'Base Metal',     val:3},
+  {name:'Magnesium',   cat:'Base Metal',     val:3},
+  // Noble Gas (4)
+  {name:'Helium',      cat:'Noble Gas',      val:4},
+  {name:'Neon',        cat:'Noble Gas',      val:4},
+  {name:'Argon',       cat:'Noble Gas',      val:4},
+  {name:'Krypton',     cat:'Noble Gas',      val:4},
+  {name:'Xenon',       cat:'Noble Gas',      val:4},
+  {name:'Radon',       cat:'Noble Gas',      val:4},
+  // Rare Earth (5)
+  {name:'Lanthanum',   cat:'Rare Earth',     val:5},
+  {name:'Cerium',      cat:'Rare Earth',     val:5},
+  {name:'Neodymium',   cat:'Rare Earth',     val:5},
+  {name:'Samarium',    cat:'Rare Earth',     val:5},
+  {name:'Europium',    cat:'Rare Earth',     val:5},
+  {name:'Gadolinium',  cat:'Rare Earth',     val:5},
+  {name:'Terbium',     cat:'Rare Earth',     val:5},
+  {name:'Dysprosium',  cat:'Rare Earth',     val:5},
+  {name:'Yttrium',     cat:'Rare Earth',     val:5},
+  {name:'Scandium',    cat:'Rare Earth',     val:5},
+  // Precious Metal (6)
+  {name:'Gold',        cat:'Precious Metal', val:6},
+  {name:'Silver',      cat:'Precious Metal', val:6},
+  {name:'Platinum',    cat:'Precious Metal', val:6},
+  {name:'Palladium',   cat:'Precious Metal', val:6},
+  {name:'Rhodium',     cat:'Precious Metal', val:6},
+  {name:'Iridium',     cat:'Precious Metal', val:6},
+  {name:'Osmium',      cat:'Precious Metal', val:6},
+  {name:'Ruthenium',   cat:'Precious Metal', val:6},
+  // Radioactive (8)
+  {name:'Uranium',     cat:'Radioactive',    val:8},
+  {name:'Thorium',     cat:'Radioactive',    val:8},
+  {name:'Plutonium',   cat:'Radioactive',    val:8},
+  {name:'Radium',      cat:'Radioactive',    val:8},
+  {name:'Polonium',    cat:'Radioactive',    val:8},
+  {name:'Actinium',    cat:'Radioactive',    val:8},
+  // Exotic (25)
+  {name:'Antimatter',  cat:'Exotic',         val:25},
+  {name:'Dark Matter', cat:'Exotic',         val:25},
+  {name:'Neutronium',  cat:'Exotic',         val:25},
+  {name:'Strange Matter',cat:'Exotic',       val:25},
+  {name:'Quantum Crystals',cat:'Exotic',     val:25},
+  {name:'Exotica',     cat:'Exotic',         val:25},
+];
+
+// ── Visit score calculator ─────────────────────────────────────────
+const CARGO_SCORE = {0:0,'-1':0,1:8,2:16,3:25,4:35,5:48,6:58,8:68,25:85};
+function visitScore(b, fuelDist){
+  let score = CARGO_SCORE[b.cargoValue] || 0;
+  if(b.bioLifeforms) score += 15;
+  const fd = typeof fuelDist === 'number' ? fuelDist : 0;
+  score -= fd * 0.5;
+  score -= ((b.weather||0) + (b.tectonics||0)) * 4;
+  const temp = parseFloat(b.temperature);
+  if(!isNaN(temp)){
+    if(temp >= 2000) score -= 30;
+    else if(temp >= 1000) score -= 20;
+    else if(temp >= 500) score -= 10;
+    else if(temp < -200) score -= 5;
+  }
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+function visitBand(score){
+  if(score >= 70) return {label:'High Priority', cls:'ok'};
+  if(score >= 50) return {label:'Worth Visiting', cls:'info'};
+  if(score >= 30) return {label:'Marginal', cls:'warn'};
+  if(score >= 10) return {label:'Low Priority', cls:''};
+  return {label:'Skip', cls:'bad'};
+}
 const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
@@ -674,6 +794,18 @@ function planetBlock(planet,num,sys){
     body.appendChild(grid);
     if(planet.notes) body.appendChild(el('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',marginBottom:'10px'}},planet.notes));
 
+    // Visit score
+    const fd = fuelDist(sys.x, sys.y);
+    const vs = visitScore(planet, typeof fd==='number'?fd:0);
+    const band = visitBand(vs);
+    const scoreBadge = el('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px',padding:'8px 10px',borderRadius:'var(--rs)',border:'.5px solid var(--bdr)',background:'var(--bg2)'}});
+    const scoreNum = el('span',{style:{fontSize:'20px',fontWeight:'700',fontFamily:'monospace'}}, String(vs));
+    const scoreLbl = el('span',{class:`tag ${band.cls?'tag-'+band.cls:''}`,style:{fontSize:'12px'}}, band.label);
+    scoreBadge.appendChild(el('span',{style:{fontSize:'11px',color:'var(--text3)'}}, 'Visit Score'));
+    scoreBadge.appendChild(scoreNum);
+    scoreBadge.appendChild(scoreLbl);
+    body.appendChild(scoreBadge);
+
     const editBtn=el('button',{class:'btn-sm',style:{marginBottom:'8px'}},'Edit planet');
     editBtn.addEventListener('click',()=>{UI.editPlanet=planet.id;render();});
     body.appendChild(editBtn);
@@ -1107,6 +1239,109 @@ function buildPlanetsTab(){
   return frag;
 }
 
+// ── Tools Tab ─────────────────────────────────────────────────────
+function buildToolsTab(){
+  const frag=document.createDocumentFragment();
+
+  // ── Visit Calculator ──
+  const calcSection=el('div',{class:'tools-section'});
+  calcSection.appendChild(el('div',{class:'tools-section-title'},'Visit Calculator'));
+
+  const state={cargoValue:0,bio:false,weather:0,tectonics:0,temperature:'',fuel:''};
+
+  const scoreEl=el('div',{class:'score-big'},'—');
+  const bandEl=el('span',{style:{fontSize:'14px',fontWeight:'600'}},'Enter values below');
+  const detailEl=el('div',{class:'score-detail'});
+  const display=el('div',{class:'score-display'},scoreEl,el('div',{},bandEl,detailEl));
+  calcSection.appendChild(display);
+
+  function recalc(){
+    const fd = parseFloat(state.fuel)||0;
+    const b = {cargoValue:state.cargoValue, bioLifeforms:state.bio, weather:state.weather, tectonics:state.tectonics, temperature:state.temperature};
+    const vs = visitScore(b, fd);
+    const band = visitBand(vs);
+    scoreEl.textContent = String(vs);
+    bandEl.textContent = band.label;
+    bandEl.className = band.cls ? 'tag tag-'+band.cls : 'tag';
+    // breakdown
+    const ms = CARGO_SCORE[state.cargoValue]||0;
+    const bs = state.bio?15:0;
+    const fp = Math.round(fd*0.5);
+    const hp = (state.weather+state.tectonics)*4;
+    const temp=parseFloat(state.temperature);
+    const tp = !isNaN(temp)?(temp>=2000?30:temp>=1000?20:temp>=500?10:temp<-200?5:0):0;
+    detailEl.textContent = `Mineral +${ms}  Bio +${bs}  Fuel −${fp}  Hazard −${hp}  Temp −${tp}`;
+  }
+
+  const grid=el('div',{class:'calc-grid'});
+  const cargoSel=mkSel(CARGO_OPTS,CARGO_LBL,state.cargoValue,v=>{state.cargoValue=+v;recalc();});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Max resource'),cargoSel));
+
+  const bioSel=mkSel(['No','Yes'],null,'No',v=>{state.bio=v==='Yes';recalc();});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Bio lifeforms'),bioSel));
+
+  const wSel=mkSel(HAZ,null,0,v=>{state.weather=+v;recalc();});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Weather'),wSel));
+
+  const tSel=mkSel(HAZ,null,0,v=>{state.tectonics=+v;recalc();});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Tectonics'),tSel));
+
+  const tempInp=mkInp('number','',v=>{state.temperature=v;recalc()},{placeholder:'e.g. 220'});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Temperature'),tempInp));
+
+  const fuelInp=mkInp('number','',v=>{state.fuel=v;recalc()},{placeholder:'e.g. 16.5',inputmode:'decimal'});
+  grid.appendChild(el('div',{},el('label',{style:{fontSize:'12px',color:'var(--text2)',display:'block',marginBottom:'4px'}},'Fuel distance'),fuelInp));
+
+  calcSection.appendChild(grid);
+
+  const hint=el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'4px',lineHeight:'1.6'}});
+  hint.textContent='Score 70–100 High Priority · 50–69 Worth Visiting · 30–49 Marginal · 10–29 Low Priority · 0–9 Skip';
+  calcSection.appendChild(hint);
+  frag.appendChild(calcSection);
+
+  // ── Minerals Reference ──
+  const minSection=el('div',{class:'tools-section'});
+  minSection.appendChild(el('div',{class:'tools-section-title'},'Minerals Reference'));
+
+  const minSearch=el('input',{type:'text',class:'minerals-search',placeholder:'Search mineral name or category...',autocomplete:'off'});
+  let minQuery='';
+  const minTableWrap=el('div',{class:'min-wrap'});
+
+  function renderMinerals(){
+    minTableWrap.innerHTML='';
+    const q=minQuery.toLowerCase();
+    const filtered=MINERALS.filter(m=>!q||m.name.toLowerCase().includes(q)||m.cat.toLowerCase().includes(q));
+    if(filtered.length===0){
+      minTableWrap.appendChild(el('div',{style:{padding:'20px',textAlign:'center',color:'var(--text3)',fontSize:'13px'}},'No minerals found.'));
+      return;
+    }
+    const table=el('table',{class:'min-table'});
+    table.appendChild(el('thead',{},el('tr',{},
+      el('th',{},'Mineral'),el('th',{},'Category'),el('th',{},'RU Value')
+    )));
+    const tbody=el('tbody',{});
+    filtered.forEach(m=>{
+      const valClass=m.val===25?'c-high':m.val>=6?'c-high':m.val>=3?'c-mid':'c-low';
+      tbody.appendChild(el('tr',{},
+        el('td',{style:{fontWeight:'500'}},m.name),
+        el('td',{style:{color:'var(--text2)'}},m.cat),
+        el('td',{},el('span',{class:`tag ${valClass}`},String(m.val)))
+      ));
+    });
+    table.appendChild(tbody);
+    minTableWrap.appendChild(table);
+  }
+
+  minSearch.addEventListener('input',e=>{minQuery=e.target.value;renderMinerals();});
+  renderMinerals();
+  minSection.appendChild(minSearch);
+  minSection.appendChild(minTableWrap);
+  minSection.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'6px'}},`${MINERALS.length} minerals · sorted by category`));
+  frag.appendChild(minSection);
+
+  return frag;
+}
+
 // ── Full render ───────────────────────────────────────────────────
 function render(){
   const app=document.getElementById('app');
@@ -1156,9 +1391,12 @@ function render(){
   notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
   const planetsTab=el('button',{class:'tab'+(UI.tab==='planets'?' on':'')},'Planets Visited');
   planetsTab.addEventListener('click',()=>{UI.tab='planets';render();});
+  const toolsTab=el('button',{class:'tab'+(UI.tab==='tools'?' on':'')},'Tools');
+  toolsTab.addEventListener('click',()=>{UI.tab='tools';render();});
   tabBar.appendChild(sysTab);
   tabBar.appendChild(notesTab);
   tabBar.appendChild(planetsTab);
+  tabBar.appendChild(toolsTab);
   frag.appendChild(tabBar);
 
   // ── Tab content ──
@@ -1172,6 +1410,11 @@ function render(){
     frag.appendChild(buildPlanetsTab());
     app.appendChild(frag);
     drawMap();
+    return;
+  }
+  if(UI.tab==='tools'){
+    frag.appendChild(buildToolsTab());
+    app.appendChild(frag);
     return;
   }
 
