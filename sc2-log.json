@@ -1332,6 +1332,319 @@
           "moons": []
         }
       ]
+    },
+    {
+      "id": "mo7m7xg1bgu",
+      "name": "Beta Indi",
+      "x": 395.8,
+      "y": 135.4,
+      "starColor": "Blue",
+      "faction": "—",
+      "notes": "",
+      "addedAt": "4/20/2026",
+      "planets": [
+        {
+          "id": "mo7m8s28cz1",
+          "type": "Carbide World",
+          "order": 2,
+          "weather": 0,
+          "tectonics": 3,
+          "temperature": "-164",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7mdw1ppdm",
+          "type": "Halide World",
+          "order": 1,
+          "weather": 0,
+          "tectonics": 3,
+          "temperature": "-148",
+          "cargoValue": 2,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        }
+      ]
+    },
+    {
+      "id": "mo7mfn4swd2",
+      "name": "Alpha Indi",
+      "x": 400,
+      "y": 136.3,
+      "starColor": "Orange",
+      "faction": "VUX",
+      "notes": "",
+      "addedAt": "4/20/2026",
+      "planets": [
+        {
+          "id": "mo7moj6zioy",
+          "type": "Gas Giant",
+          "order": 3,
+          "weather": 8,
+          "tectonics": 0,
+          "temperature": "-218",
+          "cargoValue": -1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7mr3io7az",
+          "type": "Unknown",
+          "order": 1,
+          "weather": 0,
+          "tectonics": 8,
+          "temperature": "-143",
+          "cargoValue": 1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "Chlorine World",
+          "moons": [
+            {
+              "id": "mo7mx7vgwhl",
+              "type": "Ultramarine World",
+              "order": 1,
+              "weather": 4,
+              "tectonics": 2,
+              "temperature": "-143",
+              "cargoValue": 5,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            }
+          ]
+        },
+        {
+          "id": "mo7n0v8jzy5",
+          "type": "Gas Giant",
+          "order": 2,
+          "weather": 8,
+          "tectonics": 0,
+          "temperature": "-180",
+          "cargoValue": -1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": [
+            {
+              "id": "mo7n3911wna",
+              "type": "Unknown",
+              "order": 1,
+              "weather": 3,
+              "tectonics": 2,
+              "temperature": "-180",
+              "cargoValue": 3,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "Crimson World",
+              "moons": []
+            },
+            {
+              "id": "mo7n6pbahe2",
+              "type": "Carbide World",
+              "order": 2,
+              "weather": 0,
+              "tectonics": 2,
+              "temperature": "-180",
+              "cargoValue": 1,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mo7n88wgb9q",
+      "name": "Gamma Luyton",
+      "x": 433.3,
+      "y": 156.2,
+      "starColor": "Brown Dwarf",
+      "faction": "VUX",
+      "notes": "",
+      "addedAt": "4/20/2026",
+      "planets": [
+        {
+          "id": "mo7nafuub18",
+          "type": "Metal World",
+          "order": 3,
+          "weather": 3,
+          "tectonics": 2,
+          "temperature": "-239",
+          "cargoValue": 6,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7ndxiy0sh",
+          "type": "Noble World",
+          "order": 1,
+          "weather": 0,
+          "tectonics": 1,
+          "temperature": "-198",
+          "cargoValue": 4,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7njfny53z",
+          "type": "Unknown",
+          "order": 2,
+          "weather": 0,
+          "tectonics": 1,
+          "temperature": "-228",
+          "cargoValue": 25,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": []
+        },
+        {
+          "id": "mo7nlwlqs57",
+          "type": "Gas Giant",
+          "order": 6,
+          "weather": 8,
+          "tectonics": 0,
+          "temperature": "",
+          "cargoValue": -1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": [
+            {
+              "id": "mo7nmxsu3b8",
+              "type": "Infrared World",
+              "order": 3,
+              "weather": 3,
+              "tectonics": 3,
+              "temperature": "-248",
+              "cargoValue": 3,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            },
+            {
+              "id": "mo7nqta81wv",
+              "type": "Urea World",
+              "order": 2,
+              "weather": 3,
+              "tectonics": 7,
+              "temperature": "-248",
+              "cargoValue": 1,
+              "bioLifeforms": true,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            },
+            {
+              "id": "mo7nvujbwng",
+              "type": "Unknown",
+              "order": 1,
+              "weather": 3,
+              "tectonics": 3,
+              "temperature": "-246",
+              "cargoValue": 3,
+              "bioLifeforms": true,
+              "homeworld": false,
+              "notes": "Crimson",
+              "moons": []
+            }
+          ]
+        },
+        {
+          "id": "mo7ns2h35qf",
+          "type": "Gas Giant",
+          "order": 5,
+          "weather": 8,
+          "tectonics": 0,
+          "temperature": "",
+          "cargoValue": -1,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "",
+          "moons": [
+            {
+              "id": "mo7ns2h3p5d",
+              "type": "Urea World",
+              "order": 3,
+              "weather": 3,
+              "tectonics": 5,
+              "temperature": "-246",
+              "cargoValue": 1,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            },
+            {
+              "id": "mo7nze4iuyg",
+              "type": "Unknown",
+              "order": 1,
+              "weather": 3,
+              "tectonics": 3,
+              "temperature": "-246",
+              "cargoValue": 3,
+              "bioLifeforms": true,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            },
+            {
+              "id": "mo7o0m5wck6",
+              "type": "Ultramarine World",
+              "order": 4,
+              "weather": 3,
+              "tectonics": 3,
+              "temperature": "-246",
+              "cargoValue": 5,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            },
+            {
+              "id": "mo7o23bvtdg",
+              "type": "Chondrite World",
+              "order": 2,
+              "weather": 0,
+              "tectonics": 6,
+              "temperature": "-246",
+              "cargoValue": 1,
+              "bioLifeforms": false,
+              "homeworld": false,
+              "notes": "",
+              "moons": []
+            }
+          ]
+        },
+        {
+          "id": "mo7o4wjjme2",
+          "type": "Unknown",
+          "order": 4,
+          "weather": 0,
+          "tectonics": 6,
+          "temperature": "-243",
+          "cargoValue": 25,
+          "bioLifeforms": false,
+          "homeworld": false,
+          "notes": "Magnetic World",
+          "moons": []
+        }
+      ]
     }
   ]
 }
