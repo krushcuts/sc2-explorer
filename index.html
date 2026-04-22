@@ -41,6 +41,7 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 #app{max-width:700px;margin:0 auto;padding:16px 16px 100px}
 
 input,select,textarea{font-size:16px;padding:10px 12px;width:100%;background:var(--bg);color:var(--text);border:.5px solid var(--bdr2);border-radius:var(--rs);outline:none;font-family:inherit;appearance:none;-webkit-appearance:none;transition:border-color .15s}
+input[type=checkbox]{width:18px;height:18px;min-width:18px;padding:0;appearance:auto;-webkit-appearance:checkbox;cursor:pointer;accent-color:var(--teal);border:none;background:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 textarea{resize:vertical;line-height:1.5}
 input[type=number]{-moz-appearance:textfield}
@@ -343,10 +344,12 @@ const MINERALS = [
 ];
 
 // ── Visit score calculator ─────────────────────────────────────────
-const CARGO_SCORE = {0:0,'-1':0,1:8,2:16,3:25,4:35,5:48,6:58,8:68,25:85};
+// Mineral scores — values 6+ get steeper curve to better differentiate high-value bodies
+const CARGO_SCORE = {0:0,'-1':0,1:8,2:16,3:25,4:35,5:48,6:65,8:78,25:90};
 function visitScore(b, fuelDist){
   let score = CARGO_SCORE[b.cargoValue] || 0;
   if(b.bioLifeforms) score += 15;
+  if(b.mustVisit) score += 10;
   const fd = typeof fuelDist === 'number' ? fuelDist : 0;
   score -= fd * 0.5;
   score -= ((b.weather||0) + (b.tectonics||0)) * 4;
@@ -366,9 +369,9 @@ function visitBand(score){
   if(score >= 10) return {label:'Low Priority', cls:''};
   return {label:'Skip', cls:'bad'};
 }
-// System-level score: blends best single body (60%) with aggregate mineral wealth (40%)
-// Aggregate is fuel-independent — if you're visiting, travel cost is already paid
-const RICHNESS_CEILING = 300; // ~4 Precious Metal planets saturates this
+// System-level score: blends best single body (60%) with aggregate wealth (40%)
+// mustVisit adds directly to the final score (+8 per flagged body) so it's always visible
+const RICHNESS_CEILING = 300;
 function sysVisitScore(sys){
   const fd=typeof fuelDist(sys.x,sys.y)==='number'?fuelDist(sys.x,sys.y):0;
   const bodies=[...sys.planets,...sys.planets.reduce((a,p)=>a.concat(p.moons||[]),[])];
@@ -376,7 +379,8 @@ function sysVisitScore(sys){
   const best=Math.max(...bodies.map(b=>visitScore(b,fd)));
   const mineralSum=bodies.reduce((s,b)=>s+(CARGO_SCORE[b.cargoValue]||0),0);
   const aggScore=Math.min(100,Math.round(mineralSum/RICHNESS_CEILING*100));
-  return Math.min(100,Math.round(best*0.60+aggScore*0.40));
+  const mustVisitBonus=bodies.filter(b=>b.mustVisit).length*8;
+  return Math.min(100,Math.round(best*0.60+aggScore*0.40)+mustVisitBonus);
 }
 const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
@@ -446,6 +450,11 @@ function getFiltered(){
   else if(UI.sortBy==='score') list.sort((a,b)=>{
     return (sysVisitScore(b)||0)-(sysVisitScore(a)||0);
   });
+  else if(UI.sortBy==='logged') list.sort((a,b)=>{
+    const ta=a.addedAt?new Date(a.addedAt).getTime():0;
+    const tb=b.addedAt?new Date(b.addedAt).getTime():0;
+    return tb-ta; // newest first
+  });
   else list.sort((a,b)=>a.name.localeCompare(b.name));
   return list;
 }
@@ -474,10 +483,22 @@ function fuelDist(x,y){
   if(d==='—') return '—';
   return Math.round(d/10*10)/10;
 }
+function fmtDate(iso){
+  if(!iso) return '—';
+  try{
+    // Old entries were stored as toLocaleDateString() e.g. "4/22/2026" — no time component
+    // Detect by absence of 'T' (ISO) or ':' (locale with time)
+    if(!iso.includes('T') && !iso.includes(':')){
+      return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    }
+    return new Date(iso).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'});
+  }catch(e){return iso;}
+}
 function cargoClass(v){if(v<=0) return 'c-low'; return v===25?'c-high':v>=6?'c-high':v>=3?'c-mid':'c-low'}
 function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>=3?'mid':'low'}
 
 function isRevisitable(b){
+  if(b.mustVisit) return true;
   if((b.cargoValue||0) < 5) return false;
   if((b.weather||0) + (b.tectonics||0) >= 8) return false;
   const temp = parseFloat(b.temperature);
@@ -538,7 +559,7 @@ function addSys(d){
     showFormError('sys-form-error','A star system named "'+d.name.trim()+'" already exists.');
     return;
   }
-  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toLocaleDateString(),planets:[]};
+  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toISOString(),planets:[]};
   S.systems.push(s); persist(); UI.addSys=false; UI.sel=s.id; render();
 }
 function updateSys(id,d){
@@ -552,7 +573,7 @@ function delSys(id){
     persist(); UI.sel=null; render();
   });
 }
-function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:'',moons:[]}}
+function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,mustVisit:false,notes:'',moons:[]}}
 function addPlanet(sysId,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
   if(d.order){
@@ -570,7 +591,14 @@ function addPlanet(sysId,d){
 function updatePlanet(sysId,pid,d){
   const s=S.systems.find(s=>s.id===sysId); if(!s) return;
   const i=s.planets.findIndex(p=>p.id===pid);
-  if(i>=0) s.planets[i]={...s.planets[i],...d};
+  if(i>=0){
+    const moonData=d._moon; delete d._moon;
+    s.planets[i]={...s.planets[i],...d};
+    if(moonData) {
+      if(!s.planets[i].moons) s.planets[i].moons=[];
+      s.planets[i].moons.push({...bodyDefaults(),...moonData,id:uid()});
+    }
+  }
   persist(); UI.editPlanet=null; render();
 }
 function delPlanet(sysId,pid){
@@ -599,7 +627,7 @@ function delMoon(sysId,pid,mid){
 
 // ── Body Form (planet or moon) ────────────────────────────────────
 function bodyForm(existing,title,onSave,onCancel,bodyKind){
-  const d={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:'',...existing};
+  const d={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,mustVisit:false,notes:'',...existing};
   const box=el('div',{class:'form-box'},el('div',{class:'form-title'},title));
 
   const orderLabel=bodyKind==='moon'?'Moon position (1 = closest to planet)':'Planet position (1 = closest to star)';
@@ -621,6 +649,17 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   box.appendChild(field('Biological lifeforms present',mkSel(['No','Yes'],null,d.bioLifeforms?'Yes':'No',v=>d.bioLifeforms=v==='Yes')));
   box.appendChild(field('Alien homeworld',mkSel(['No','Yes'],null,d.homeworld?'Yes':'No',v=>d.homeworld=v==='Yes')));
 
+  // Must Visit override
+  const mvRow=el('div',{style:{display:'flex',alignItems:'center',gap:'10px',margin:'10px 0'}});
+  const mvCheck=el('input',{type:'checkbox',id:'mv-chk',style:{width:'18px',height:'18px',cursor:'pointer'}});
+  mvCheck.checked=!!d.mustVisit;
+  mvCheck.addEventListener('change',e=>d.mustVisit=e.target.checked);
+  const mvLabel=el('label',{style:{fontSize:'14px',cursor:'pointer',userSelect:'none',display:'flex',alignItems:'center',gap:'8px'}});
+  mvLabel.appendChild(mvCheck);
+  mvLabel.appendChild(document.createTextNode('Must Visit override (+10 to score)'));
+  mvRow.appendChild(mvLabel);
+  box.appendChild(mvRow);
+
   const notesTA=el('textarea',{rows:'2',placeholder:'Notes...'});
   notesTA.value=d.notes;
   notesTA.addEventListener('input',e=>d.notes=e.target.value);
@@ -631,9 +670,10 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   }
 
   // Optional inline moon (planet form only)
-  let moonData=null;
+  // Use an object ref for moonState so closures can't shadow the variable
+  const moonState={open:false};
+  const m={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,mustVisit:false,notes:''};
   if(bodyKind==='planet'){
-    const m={type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,notes:''};
     const moonSec=el('div',{style:{display:'none',borderTop:'.5px solid var(--bdr)',paddingTop:'10px',marginTop:'4px'}});
     moonSec.appendChild(field('Moon position (1 = closest to planet)',mkInp('number',m.order||'',v=>m.order=+v||0,{inputmode:'numeric',min:'0',placeholder:'1, 2, 3...'})));
     moonSec.appendChild(field('Moon type',mkSel(PLANET_TYPES,null,m.type,v=>m.type=v)));
@@ -646,24 +686,31 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
     moonSec.appendChild(field('Max resource value',mkSel(CARGO_OPTS,CARGO_LBL,m.cargoValue,v=>m.cargoValue=+v)));
     moonSec.appendChild(field('Bio lifeforms',mkSel(['No','Yes'],null,'No',v=>m.bioLifeforms=v==='Yes')));
     moonSec.appendChild(field('Alien homeworld',mkSel(['No','Yes'],null,'No',v=>m.homeworld=v==='Yes')));
+    const mvMoonRow=el('div',{style:{display:'flex',alignItems:'center',gap:'10px',margin:'10px 0'}});
+    const mvMoonChk=el('input',{type:'checkbox',style:{width:'18px',height:'18px',cursor:'pointer'}});
+    mvMoonChk.addEventListener('change',e=>m.mustVisit=e.target.checked);
+    const mvMoonLbl=el('label',{style:{fontSize:'14px',cursor:'pointer',userSelect:'none',display:'flex',alignItems:'center',gap:'8px'}});
+    mvMoonLbl.appendChild(mvMoonChk);
+    mvMoonLbl.appendChild(document.createTextNode('Must Visit override'));
+    mvMoonRow.appendChild(mvMoonLbl);
+    moonSec.appendChild(mvMoonRow);
     const mNotes=el('textarea',{rows:'2',placeholder:'Moon notes...'});
     mNotes.addEventListener('input',e=>m.notes=e.target.value);
     moonSec.appendChild(field('Moon notes',mNotes));
 
-    const moonToggle=el('div',{class:'section-sep',style:{cursor:'pointer',userSelect:'none',color:'var(--teal)'}},'+ Log a moon for this planet (optional)');
-    let moonOpen=false;
-    moonToggle.addEventListener('click',()=>{
-      moonOpen=!moonOpen;
-      moonSec.style.display=moonOpen?'block':'none';
-      moonToggle.textContent=moonOpen?'- Moon data (tap to collapse)':'+ Log a moon for this planet (optional)';
-      moonData=moonOpen?m:null;
+    const moonToggle=el('button',{class:'btn-sm',type:'button',style:{marginTop:'8px',color:'var(--teal)',borderColor:'var(--teal)'}},'+ Log a moon for this planet (optional)');
+    moonToggle.addEventListener('click',e=>{
+      e.preventDefault(); e.stopPropagation();
+      moonState.open=!moonState.open;
+      moonSec.style.display=moonState.open?'block':'none';
+      moonToggle.textContent=moonState.open?'- Moon data (tap to collapse)':'+ Log a moon for this planet (optional)';
     });
     box.appendChild(moonToggle);
     box.appendChild(moonSec);
   }
 
-  const saveBtn=el('button',{class:'btn-primary'},existing?'Save changes':'Save');
-  saveBtn.addEventListener('click',()=>{if(moonData) d._moon=moonData; onSave(d);});
+  const saveBtn=el('button',{class:'btn-primary',type:'button'},existing?'Save changes':'Save');
+  saveBtn.addEventListener('click',()=>{if(moonState.open) d._moon=m; onSave(d);});
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
@@ -726,6 +773,7 @@ function moonRow(moon,num,sysId,pid){
     tags.appendChild(el('span',{class:`tag ${cargoClass(moon.cargoValue)}`},rName));
   }
   if(isRevisitable(moon)) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(moon.mustVisit) tags.appendChild(el('span',{class:'tag info',style:{fontWeight:'700'}},'★ must visit'));
   if(moon.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
   if(moon.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
 
@@ -751,7 +799,8 @@ function moonRow(moon,num,sysId,pid){
      ['Temperature',moon.temperature?String(moon.temperature)+'°':'—'],
      ['Max resource',resourceBadge(moon.cargoValue)],
      ['Bio lifeforms',moon.bioLifeforms?'Yes':'No'],
-     ['Homeworld',moon.homeworld?'Yes':'No']
+     ['Homeworld',moon.homeworld?'Yes':'No'],
+     ['Must Visit',moon.mustVisit?'★ Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
       r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
@@ -789,6 +838,7 @@ function planetBlock(planet,num,sys){
     tags.appendChild(el('span',{class:`tag ${cargoClass(planet.cargoValue)}`},rName));
   }
   if(isRevisitable(planet)) tags.appendChild(el('span',{class:'tag revisit'},'revisit'));
+  if(planet.mustVisit) tags.appendChild(el('span',{class:'tag info',style:{fontWeight:'700'}},'★ must visit'));
   if(planet.bioLifeforms) tags.appendChild(el('span',{class:'tag ok'},'bio'));
   if(planet.homeworld) tags.appendChild(el('span',{class:'tag info'},'homeworld'));
   const moons=planet.moons||[];
@@ -816,7 +866,8 @@ function planetBlock(planet,num,sys){
      ['Temperature',planet.temperature?String(planet.temperature)+'°':'—'],
      ['Max resource',resourceBadge(planet.cargoValue)],
      ['Bio lifeforms',planet.bioLifeforms?'Yes':'No'],
-     ['Homeworld',planet.homeworld?'Yes':'No']
+     ['Homeworld',planet.homeworld?'Yes':'No'],
+     ['Must Visit',planet.mustVisit?'★ Yes':'No']
     ].forEach(([lbl,val])=>{
       const r=el('div',{class:'detail-row'},el('span',{class:'dlabel'},lbl));
       r.appendChild(typeof val==='string'?el('span',{class:'dval'},val):val);
@@ -933,7 +984,7 @@ function sysCard(sys){
   body.appendChild(chips);
 
   if(sys.notes) body.appendChild(el('div',{class:'sys-notes'},sys.notes));
-  body.appendChild(el('div',{class:'logged-date'},'Logged '+sys.addedAt));
+  body.appendChild(el('div',{class:'logged-date'},'Logged '+fmtDate(sys.addedAt)));
 
   const editSysBtn=el('button',{class:'btn-sm',style:{marginBottom:'10px'}},'Edit system info');
   editSysBtn.addEventListener('click',()=>{UI.editSys=sys.id;render();});
@@ -1373,6 +1424,47 @@ function buildMineralsTab(){
   return frag;
 }
 
+// ── Last Logged Tab ───────────────────────────────────────────────
+function buildLastLoggedTab(){
+  const frag=document.createDocumentFragment();
+  if(!S.systems.length){
+    frag.appendChild(el('div',{class:'pv-empty'},'No systems logged yet.'));
+    return frag;
+  }
+  const sorted=[...S.systems].sort((a,b)=>{
+    const ta=a.addedAt?new Date(a.addedAt).getTime():0;
+    const tb=b.addedAt?new Date(b.addedAt).getTime():0;
+    return tb-ta;
+  });
+  const wrap=el('div',{class:'pv-wrap'});
+  const table=el('table',{class:'min-table'});
+  table.appendChild(el('thead',{},el('tr',{},
+    el('th',{},'Star System'),
+    el('th',{},'Logged'),
+    el('th',{},'Planets'),
+    el('th',{},'Score')
+  )));
+  const tbody=el('tbody',{});
+  sorted.forEach(sys=>{
+    const score=sysVisitScore(sys);
+    const band=score!==null?visitBand(score):null;
+    const sysSpan=el('span',{class:'pv-sys'},sys.name);
+    sysSpan.addEventListener('click',()=>{UI.sel=sys.id;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    const sysCell=el('td',{}); sysCell.appendChild(sysSpan);
+    tbody.appendChild(el('tr',{},
+      sysCell,
+      el('td',{style:{fontFamily:'monospace',fontSize:'12px',color:'var(--text2)'}},fmtDate(sys.addedAt)),
+      el('td',{style:{textAlign:'center'}},String(sys.planets.length)),
+      el('td',{},score!==null?el('span',{class:'tag tag-'+(band.cls||'')},String(score)):el('span',{style:{color:'var(--text3)'}},'—'))
+    ));
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  frag.appendChild(wrap);
+  frag.appendChild(el('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'8px',fontFamily:'monospace'}},`${sorted.length} systems · newest first · tap name to jump`));
+  return frag;
+}
+
 // ── Full render ───────────────────────────────────────────────────
 function render(){
   const app=document.getElementById('app');
@@ -1422,8 +1514,8 @@ function render(){
   notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
 
   // References dropdown tab
-  const refTabs=['planets','tools','minerals'];
-  const refLabels={planets:'Planets Visited',tools:'Calculator',minerals:'Minerals'};
+  const refTabs=['planets','tools','minerals','lastlogged'];
+  const refLabels={planets:'Planets Visited',tools:'Calculator',minerals:'Minerals',lastlogged:'Last Logged'};
   const isRefTab=refTabs.includes(UI.tab);
   const refLabel=isRefTab?refLabels[UI.tab]:'References';
   const refDropWrap=el('div',{class:'tab-dropdown'});
@@ -1475,6 +1567,11 @@ function render(){
     app.appendChild(frag);
     return;
   }
+  if(UI.tab==='lastlogged'){
+    frag.appendChild(buildLastLoggedTab());
+    app.appendChild(frag);
+    return;
+  }
 
   // Search input with custom autocomplete
   const searchWrap=el('div',{class:'search-row'});
@@ -1511,7 +1608,7 @@ function render(){
   // Sort row
   const sb=el('div',{class:'filter-bar'});
   sb.appendChild(el('span',{class:'label'},'Sort:'));
-  [['name','A–Z'],['dist','Distance'],['cargo','Cargo'],['score','Score']].forEach(([val,lbl])=>{
+  [['name','A–Z'],['dist','Distance'],['cargo','Cargo'],['score','Score'],['logged','Last Logged']].forEach(([val,lbl])=>{
     const p=el('button',{class:'fpill sort-pill'+(UI.sortBy===val?' on':'')},lbl);
     p.addEventListener('click',()=>{UI.sortBy=val;renderList();document.querySelectorAll('.sort-pill').forEach(x=>x.className='fpill sort-pill');p.className='fpill sort-pill on';});
     sb.appendChild(p);
@@ -1535,12 +1632,17 @@ function render(){
 
   // Map toggle
   const mapToggle=el('div',{class:'map-toggle'},el('span',{},UI.map?'▲':'▼'),el('span',{},`Star map (${S.systems.length} logged)`));
-  mapToggle.addEventListener('click',()=>{UI.map=!UI.map;render();});
+  mapToggle.addEventListener('click',()=>{UI.map=!UI.map;if(!UI.map) mapView=null;render();});
   frag.appendChild(mapToggle);
   if(UI.map){
     const cv=el('canvas',{id:'starmap',height:'280'});
     frag.appendChild(cv);
-    frag.appendChild(el('div',{class:'map-legend'},`Teal = logged · Amber = selected · Sol (${SOL_X}, ${SOL_Y}) · Y-axis inverted`));
+    const mapMeta=el('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'4px'}});
+    mapMeta.appendChild(el('div',{class:'map-legend'},mapView?`Zoomed ${mapView.x0}–${mapView.x1}, ${mapView.y0}–${mapView.y1} · tap a star to select`:'Tap any of 16 squares to zoom · teal = logged · amber = selected'));
+    const resetBtn=el('button',{id:'map-reset',class:'btn-sm',style:{display:mapView?'inline-block':'none'}},'Reset view');
+    resetBtn.addEventListener('click',()=>{mapView=null;drawMap();resetBtn.style.display='none';});
+    mapMeta.appendChild(resetBtn);
+    frag.appendChild(mapMeta);
   }
 
   // Export / Import / GitHub
@@ -1594,47 +1696,100 @@ function render(){
 }
 
 // ── Star Map ──────────────────────────────────────────────────────
+// mapView: {x0,y0,x1,y1} in map coords (0–1000). null = full view
+let mapView = null;
+
 function drawMap(){
   const cv=document.getElementById('starmap');
   if(!cv) return;
+  const resetBtn=document.getElementById('map-reset');
+
   const dpr=window.devicePixelRatio||1;
   const w=cv.offsetWidth||320;
   cv.width=w*dpr;cv.height=w*dpr;cv.style.height=w+'px';
   const ctx=cv.getContext('2d');
   ctx.scale(dpr,dpr);
-  const pad=20,inner=w-pad*2;
-  const px=v=>pad+(v/1000)*inner;
+
+  const view=mapView||{x0:0,y0:0,x1:1000,y1:1000};
+  const pad=16;
+  const inner=w-pad*2;
+  const px=v=>pad+((v-view.x0)/(view.x1-view.x0))*inner;
+  // py: game Y=0 at bottom, canvas Y=0 at top — correct for any zoom level
+  const py=v=>pad+((view.y1-v)/(view.y1-view.y0))*inner;
+
   const dark=!document.documentElement.classList.contains('light');
   const gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
   const lc=dark?'#636366':'#aaa';
-  ctx.strokeStyle=gc;ctx.lineWidth=.5;
-  [250,500,750].forEach(v=>{
-    ctx.beginPath();ctx.moveTo(pad,px(v));ctx.lineTo(w-pad,px(v));ctx.stroke();
-    ctx.beginPath();ctx.moveTo(px(v),pad);ctx.lineTo(px(v),w-pad);ctx.stroke();
-  });
-  const sx=px(SOL_X),sy=px(1000-SOL_Y);
-  ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);
-  ctx.fillStyle='#EF9F27';ctx.globalAlpha=.4;ctx.fill();ctx.globalAlpha=1;
-  ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText('Sol',sx+7,sy+3);
-  S.systems.forEach(s=>{
-    const cx=px(s.x),cy=px(1000-s.y),sel=s.id===UI.sel;
-    ctx.beginPath();ctx.arc(cx,cy,sel?7:4,0,Math.PI*2);
-    ctx.fillStyle=sel?'#EF9F27':'#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
-    if(sel){ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.strokeStyle='#EF9F27';ctx.lineWidth=1;ctx.globalAlpha=.5;ctx.stroke();ctx.globalAlpha=1;}
-    ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText(s.name,cx+10,cy+4);
-  });
-  ctx.fillStyle=lc;ctx.font='9px monospace';
-  ctx.fillText('0,0',pad,w-4);ctx.fillText('1000',w-36,w-4);
 
-  // Click to select system
+  // Grid lines — 4×4 in full view, finer grid when zoomed
+  const gridStep=mapView?125:250;
+  ctx.strokeStyle=gc;ctx.lineWidth=.5;
+  for(let v=0;v<=1000;v+=gridStep){
+    if(v>=view.x0&&v<=view.x1){ctx.beginPath();ctx.moveTo(px(v),pad);ctx.lineTo(px(v),w-pad);ctx.stroke();}
+    if(v>=view.y0&&v<=view.y1){ctx.beginPath();ctx.moveTo(pad,py(v));ctx.lineTo(w-pad,py(v));ctx.stroke();}
+  }
+
+  // In full view, label the 4×4 grid squares so user knows where to tap
+  if(!mapView){
+    ctx.fillStyle=lc;ctx.font='8px monospace';ctx.globalAlpha=.45;
+    for(let col=0;col<4;col++){
+      for(let row=0;row<4;row++){
+        const lx=px(col*250)+4;
+        const ly=py((3-row)*250+250)+11; // top of each square
+        ctx.fillText(`${col*250},${row*250}`,lx,ly);
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // Sol
+  const sx=px(SOL_X),sy=py(SOL_Y);
+  if(sx>=pad&&sx<=w-pad&&sy>=pad&&sy<=w-pad){
+    ctx.beginPath();ctx.arc(sx,sy,4,0,Math.PI*2);
+    ctx.fillStyle='#EF9F27';ctx.globalAlpha=.4;ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText('Sol',sx+6,sy+3);
+  }
+
+  const dotR=mapView?5:4;
+  S.systems.forEach(s=>{
+    const cx=px(s.x),cy=py(s.y),sel=s.id===UI.sel;
+    if(cx<pad-dotR||cx>w-pad+dotR||cy<pad-dotR||cy>w-pad+dotR) return;
+    ctx.beginPath();ctx.arc(cx,cy,sel?dotR+3:dotR,0,Math.PI*2);
+    ctx.fillStyle=sel?'#EF9F27':'#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
+    if(sel){ctx.beginPath();ctx.arc(cx,cy,dotR+8,0,Math.PI*2);ctx.strokeStyle='#EF9F27';ctx.lineWidth=1;ctx.globalAlpha=.5;ctx.stroke();ctx.globalAlpha=1;}
+    ctx.fillStyle=lc;ctx.font=mapView?'10px monospace':'9px monospace';ctx.fillText(s.name,cx+dotR+3,cy+4);
+  });
+
+  // Corner labels
+  ctx.fillStyle=lc;ctx.font='9px monospace';
+  ctx.fillText(`${view.x0},${view.y0}`,pad,w-4);
+  ctx.fillText(`${view.x1}`,w-30,w-4);
+
+  // Click handler — two-stage: first tap zooms quadrant, second tap (when zoomed) selects star
   cv.onclick=function(e){
     const rect=cv.getBoundingClientRect();
     const scaleX=w/rect.width;
     const mx=(e.clientX-rect.left)*scaleX;
     const my=(e.clientY-rect.top)*scaleX;
-    let hit=null,best=18;
+
+    // Convert click to map coords — inverse of px/py
+    const mapX=view.x0+((mx-pad)/inner)*(view.x1-view.x0);
+    const mapY=view.y1-((my-pad)/inner)*(view.y1-view.y0);
+
+    if(!mapView){
+      // Full view — first tap zooms into the clicked 250×250 square (4×4 grid)
+      const qx=Math.floor(mapX/250)*250;
+      const qy=Math.floor(mapY/250)*250;
+      mapView={x0:Math.max(0,qx),y0:Math.max(0,qy),x1:Math.min(1000,qx+250),y1:Math.min(1000,qy+250)};
+      if(resetBtn) resetBtn.style.display='inline-block';
+      drawMap();
+      return;
+    }
+
+    // Zoomed view — tap selects nearest star
+    let hit=null,best=mapView?(view.x1-view.x0)*0.06:20;
     S.systems.forEach(s=>{
-      const cx=px(s.x),cy=px(1000-s.y);
+      const cx=px(s.x),cy=py(s.y);
       const d=Math.sqrt((mx-cx)*(mx-cx)+(my-cy)*(my-cy));
       if(d<best){best=d;hit=s;}
     });
@@ -1642,7 +1797,6 @@ function drawMap(){
       UI.sel=UI.sel===hit.id?null:hit.id;
       UI.addPlanet=null;UI.addMoon=null;
       render();
-      // scroll to card and close map
       setTimeout(function(){
         const card=document.querySelector('[data-sys="'+hit.id+'"]');
         if(card) card.scrollIntoView({behavior:'smooth',block:'start'});
