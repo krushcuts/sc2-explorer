@@ -251,7 +251,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
+const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Maroon World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -345,14 +345,17 @@ const MINERALS = [
 
 // ── Visit score calculator ─────────────────────────────────────────
 // Mineral scores — values 6+ get steeper curve to better differentiate high-value bodies
-const CARGO_SCORE = {0:0,'-1':0,1:8,2:16,3:25,4:35,5:48,6:65,8:78,25:90};
+const CARGO_SCORE = {0:0,'-1':0,1:4,2:8,3:14,4:24,5:48,6:65,8:78,25:90};
 function visitScore(b, fuelDist){
   let score = CARGO_SCORE[b.cargoValue] || 0;
   if(b.bioLifeforms) score += 15;
   if(b.mustVisit) score += 10;
   const fd = typeof fuelDist === 'number' ? fuelDist : 0;
-  score -= fd * 0.5;
-  score -= ((b.weather||0) + (b.tectonics||0)) * 4;
+  // Fuel: first 20 units free, then × 0.3
+  score -= Math.max(0, fd - 20) * 0.3;
+  // Hazard: no penalty below 8, then (combined − 7) × 8
+  const hz = (b.weather||0) + (b.tectonics||0);
+  if(hz >= 8) score -= (hz - 7) * 8;
   const temp = parseFloat(b.temperature);
   if(!isNaN(temp)){
     if(temp >= 2000) score -= 30;
