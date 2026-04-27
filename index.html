@@ -531,22 +531,6 @@ function isRevisitable(b){
   return true;
 }
 
-// ── Swipe to dismiss forms ────────────────────────────────────────
-function swipeToDismiss(boxEl, onDismiss){
-  let startY=0, startX=0, scrollTop=0;
-  boxEl.addEventListener('touchstart',e=>{
-    startY=e.touches[0].clientY;
-    startX=e.touches[0].clientX;
-    scrollTop=boxEl.scrollTop;
-  },{passive:true});
-  boxEl.addEventListener('touchend',e=>{
-    const dy=e.changedTouches[0].clientY-startY;
-    const dx=Math.abs(e.changedTouches[0].clientX-startX);
-    // Only dismiss if: swipe is downward, mostly vertical, box is scrolled to top, and swipe is large
-    if(dy>80&&dx<40&&scrollTop<=0) onDismiss();
-  },{passive:true});
-}
-
 function el(tag,attrs,...kids){
   const e=document.createElement(tag);
   if(attrs) for(const[k,v]of Object.entries(attrs)){
@@ -755,7 +739,6 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
-  swipeToDismiss(box, onCancel);
   return box;
 }
 
@@ -790,7 +773,6 @@ function sysForm(existing,onSave,onCancel){
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
-  swipeToDismiss(box, onCancel);
   return box;
 }
 
