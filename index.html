@@ -65,6 +65,19 @@ button:active{background:var(--bg3);transform:scale(.97)}
 .header-row1-left{display:flex;align-items:center;gap:10px}
 .app-icon{width:36px;height:36px;border-radius:6px;object-fit:contain;flex-shrink:0;image-rendering:pixelated}
 .header-row2{display:flex;gap:12px;padding-bottom:4px}
+.upgrades-row{display:flex;align-items:center;gap:14px;padding:8px 0 6px;border-top:.5px solid var(--bdr);flex-wrap:wrap}
+.upgrades-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;flex-shrink:0}
+.upgrade-chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;user-select:none}
+.upgrade-chk input{width:16px;height:16px;min-width:16px;flex-shrink:0;margin:0}
+.upgrade-chk.active{color:var(--teal);font-weight:600}
+.fuel-near{color:var(--ok-tx)}
+.fuel-mid{color:var(--warn-tx)}
+.fuel-far{color:var(--bad-tx)}
+.btn-mined-on{background:var(--ok-bg);color:var(--ok-tx);border-color:var(--ok-tx)}
+.empty-state{padding:48px 24px;text-align:center;color:var(--text3)}
+.empty-state-icon{font-size:36px;margin-bottom:12px}
+.empty-state-title{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.empty-state-sub{font-size:13px;line-height:1.6}
 .stats{display:flex;gap:12px}
 .stat{text-align:center}
 .stat-n{font-size:17px;font-weight:600;font-family:monospace;line-height:1.1}
@@ -251,7 +264,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Maroon World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
+const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Maroon World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Rainbow World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -351,17 +364,19 @@ function visitScore(b, fuelDist){
   if(b.bioLifeforms) score += 15;
   if(b.mustVisit) score += 10;
   const fd = typeof fuelDist === 'number' ? fuelDist : 0;
-  // Fuel: first 20 units free, then × 0.3
   score -= Math.max(0, fd - 20) * 0.3;
-  // Hazard: no penalty below 8, then (combined − 7) × 8
-  const hz = (b.weather||0) + (b.tectonics||0);
+  // Hazard — respect shields
+  const hz = (UPGRADES.weather?0:(b.weather||0)) + (UPGRADES.tectonic?0:(b.tectonics||0));
   if(hz >= 8) score -= (hz - 7) * 8;
-  const temp = parseFloat(b.temperature);
-  if(!isNaN(temp)){
-    if(temp >= 2000) score -= 30;
-    else if(temp >= 1000) score -= 20;
-    else if(temp >= 500) score -= 10;
-    else if(temp < -200) score -= 5;
+  // Temperature — respect heat shield
+  if(!UPGRADES.heat){
+    const temp = parseFloat(b.temperature);
+    if(!isNaN(temp)){
+      if(temp >= 2000) score -= 30;
+      else if(temp >= 1000) score -= 20;
+      else if(temp >= 500) score -= 10;
+      else if(temp < -200) score -= 5;
+    }
   }
   return Math.max(0, Math.min(100, Math.round(score)));
 }
@@ -388,17 +403,21 @@ function sysVisitScore(sys){
 const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
+const UPG_KEY = 'sc2-upgrades';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {sel:null,openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1};
+let UI = {openSys:new Set(),openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
+let UPGRADES = {tectonic:false,weather:false,heat:false};
 
 // ── Persistence ───────────────────────────────────────────────────
 function load(){try{const d=localStorage.getItem(KEY);if(d)S=JSON.parse(d)}catch(e){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function loadGH(){try{const d=localStorage.getItem(GH_KEY);if(d)GH=Object.assign(GH,JSON.parse(d))}catch(e){}}
 function saveGH(){try{localStorage.setItem(GH_KEY,JSON.stringify(GH))}catch(e){}}
+function loadUpgrades(){try{const d=localStorage.getItem(UPG_KEY);if(d)UPGRADES=Object.assign(UPGRADES,JSON.parse(d))}catch(e){}}
+function saveUpgrades(){try{localStorage.setItem(UPG_KEY,JSON.stringify(UPGRADES))}catch(e){}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000)}
 
@@ -503,10 +522,27 @@ function cargoTier(v){if(v<=0) return 'low'; return v===25?'high':v>=6?'high':v>
 function isRevisitable(b){
   if(b.mustVisit) return true;
   if((b.cargoValue||0) < 5) return false;
-  if((b.weather||0) + (b.tectonics||0) >= 8) return false;
-  const temp = parseFloat(b.temperature);
-  if(!isNaN(temp) && temp >= 1000) return false;
+  const hz=(UPGRADES.weather?0:(b.weather||0))+(UPGRADES.tectonic?0:(b.tectonics||0));
+  if(hz >= 8) return false;
+  if(!UPGRADES.heat){
+    const temp=parseFloat(b.temperature);
+    if(!isNaN(temp) && temp >= 1000) return false;
+  }
   return true;
+}
+
+// ── Swipe to dismiss forms ────────────────────────────────────────
+function swipeToDismiss(boxEl, onDismiss){
+  let startY=0, startX=0;
+  boxEl.addEventListener('touchstart',e=>{
+    startY=e.touches[0].clientY;
+    startX=e.touches[0].clientX;
+  },{passive:true});
+  boxEl.addEventListener('touchend',e=>{
+    const dy=e.changedTouches[0].clientY-startY;
+    const dx=Math.abs(e.changedTouches[0].clientX-startX);
+    if(dy>60&&dx<40) onDismiss();
+  },{passive:true});
 }
 
 function el(tag,attrs,...kids){
@@ -562,8 +598,8 @@ function addSys(d){
     showFormError('sys-form-error','A star system named "'+d.name.trim()+'" already exists.');
     return;
   }
-  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toISOString(),planets:[]};
-  S.systems.push(s); persist(); UI.addSys=false; UI.sel=s.id; render();
+  const s={id:uid(),name:d.name,x:d.x,y:d.y,starColor:d.starColor,faction:d.faction||'—',notes:d.notes||'',addedAt:new Date().toISOString(),mined:false,planets:[]};
+  S.systems.push(s); persist(); UI.addSys=false; UI.openSys.add(s.id); render();
 }
 function updateSys(id,d){
   const s=S.systems.find(s=>s.id===id);
@@ -573,7 +609,7 @@ function updateSys(id,d){
 function delSys(id){
   confirmDialog('Delete this star system and all its planets and moons?', ()=>{
     S.systems=S.systems.filter(s=>s.id!==id);
-    persist(); UI.sel=null; render();
+    persist(); UI.openSys.clear(); render();
   });
 }
 function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,mustVisit:false,notes:'',moons:[]}}
@@ -717,6 +753,7 @@ function bodyForm(existing,title,onSave,onCancel,bodyKind){
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
+  swipeToDismiss(box, onCancel);
   return box;
 }
 
@@ -751,6 +788,7 @@ function sysForm(existing,onSave,onCancel){
   const cancelBtn=el('button',{},'Cancel');
   cancelBtn.addEventListener('click',onCancel);
   box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
+  swipeToDismiss(box, onCancel);
   return box;
 }
 
@@ -923,7 +961,7 @@ function planetBlock(planet,num,sys){
 
 // ── System card ───────────────────────────────────────────────────
 function sysCard(sys){
-  const isOpen=UI.sel===sys.id;
+  const isOpen=UI.openSys.has(sys.id);
   const dist=distSol(sys.x,sys.y);
   const fuel=fuelDist(sys.x,sys.y);
   const fd=typeof fuel==='number'?fuel:0;
@@ -935,20 +973,28 @@ function sysCard(sys){
   const delBtn=el('button',{class:'btn-del'},'✕');
   delBtn.addEventListener('click',e=>{e.stopPropagation();delSys(sys.id);});
 
-  const nameRow=el('div',{style:{display:'flex',alignItems:'baseline',gap:'6px'}},
+  // Fuel color: green < 20, amber 20-50, red > 50
+  const fuelClass=typeof fuel!=='number'?'':'fuel-'+(fuel<20?'near':fuel<=50?'mid':'far');
+  const minedBadge=sys.mined?el('span',{class:'tag tag-ok',style:{fontSize:'10px',marginLeft:'4px'}},'⛏ mined'):null;
+
+  const nameRow=el('div',{style:{display:'flex',alignItems:'baseline',gap:'6px',flexWrap:'wrap'}},
     el('div',{class:'sys-name'},sys.name),
-    sysScore!==null?el('span',{class:'tag tag-'+(sysBand.cls||''),style:{fontSize:'10px',fontWeight:'700',verticalAlign:'middle'}},String(sysScore)):null
+    sysScore!==null?el('span',{class:'tag tag-'+(sysBand.cls||''),style:{fontSize:'10px',fontWeight:'700',verticalAlign:'middle'}},String(sysScore)):null,
+    minedBadge
   );
 
   const hdr=el('div',{class:'sys-header'},
     el('div',{style:{flex:'1'}},
       nameRow,
-      el('div',{class:'sys-meta'},`(${sys.x}, ${sys.y}) · ${dist} dist · ${fuel} fuel`)
+      el('div',{class:'sys-meta'},`(${sys.x}, ${sys.y}) · ${dist} dist · `,el('span',{class:fuelClass},`${fuel} fuel`))
     ),
     el('span',{class:'chevron'},isOpen?'▲':'▼'),
     delBtn
   );
-  hdr.addEventListener('click',()=>{UI.sel=isOpen?null:sys.id;UI.addPlanet=null;UI.addMoon=null;render();});
+  hdr.addEventListener('click',()=>{
+    if(isOpen) UI.openSys.delete(sys.id); else UI.openSys.add(sys.id);
+    UI.addPlanet=null;UI.addMoon=null;render();
+  });
   card.appendChild(hdr);
 
   if(!isOpen) return card;
@@ -989,9 +1035,18 @@ function sysCard(sys){
   if(sys.notes) body.appendChild(el('div',{class:'sys-notes'},sys.notes));
   body.appendChild(el('div',{class:'logged-date'},'Logged '+fmtDate(sys.addedAt)));
 
-  const editSysBtn=el('button',{class:'btn-sm',style:{marginBottom:'10px'}},'Edit system info');
+  const btnRow=el('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
+  const editSysBtn=el('button',{class:'btn-sm'},'Edit system info');
   editSysBtn.addEventListener('click',()=>{UI.editSys=sys.id;render();});
-  body.appendChild(editSysBtn);
+  const minedBtn=el('button',{class:'btn-sm'+(sys.mined?' btn-mined-on':'')},sys.mined?'⛏ Mined ✓':'⛏ Mark as Mined');
+  minedBtn.addEventListener('click',()=>{
+    sys.mined=!sys.mined;
+    persist();
+    render();
+  });
+  btnRow.appendChild(editSysBtn);
+  btnRow.appendChild(minedBtn);
+  body.appendChild(btnRow);
 
   const sortedPlanets=[...sys.planets].sort((a,b)=>{
     if(!a.order&&!b.order) return 0;
@@ -1027,9 +1082,20 @@ function renderList(){
   if(!container){render();return;}
   container.innerHTML='';
   const filtered=getFiltered();
-  if(filtered.length===0){
-    container.appendChild(el('div',{class:'empty'},
-      S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
+  // Update collapse/expand buttons
+  const collapseAll=document.getElementById('collapse-all');
+  const expandAll=document.getElementById('expand-all');
+  if(collapseAll) collapseAll.disabled=UI.openSys.size===0;
+  if(expandAll) expandAll.disabled=filtered.length===0||UI.openSys.size===filtered.length;
+  if(S.systems.length===0){
+    // Empty state
+    const es=el('div',{class:'empty-state'});
+    es.appendChild(el('div',{class:'empty-state-icon'},'🌌'));
+    es.appendChild(el('div',{class:'empty-state-title'},'No systems logged yet'));
+    es.appendChild(el('div',{class:'empty-state-sub'},'Tap + below to log your first star system.\nThe galaxy awaits.'));
+    container.appendChild(es);
+  } else if(filtered.length===0){
+    container.appendChild(el('div',{class:'empty'},'No matches.'));
   } else {
     filtered.forEach(s=>container.appendChild(sysCard(s)));
   }
@@ -1224,7 +1290,7 @@ function renderNotesList(container,query){
     const sysSpan=el('span',{class:'src-sys'});
     sysSpan.textContent=e.sysName;
     sysSpan.style.cursor='pointer';
-    sysSpan.addEventListener('click',()=>{UI.sel=e.sysId;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    sysSpan.addEventListener('click',()=>{UI.openSys.add(e.sysId);UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
     src.appendChild(sysSpan);
     src.appendChild(el('span',{style:{color:'var(--text3)'}},'>'));
     src.appendChild(el('span',{class:'src-body'},e.bodyLabel));
@@ -1315,7 +1381,7 @@ function buildPlanetsTab(){
     const tr=el('tr',{});
     const sysCell=el('td',{});
     const sysSpan=el('span',{class:'pv-sys'},row.sysName);
-    sysSpan.addEventListener('click',()=>{UI.sel=row.sysId;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    sysSpan.addEventListener('click',()=>{UI.openSys.add(row.sysId);UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
     sysCell.appendChild(sysSpan);
     tr.appendChild(sysCell);
     tr.appendChild(el('td',{},row.designator));
@@ -1452,7 +1518,7 @@ function buildLastLoggedTab(){
     const score=sysVisitScore(sys);
     const band=score!==null?visitBand(score):null;
     const sysSpan=el('span',{class:'pv-sys'},sys.name);
-    sysSpan.addEventListener('click',()=>{UI.sel=sys.id;UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    sysSpan.addEventListener('click',()=>{UI.openSys.add(sys.id);UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
     const sysCell=el('td',{}); sysCell.appendChild(sysSpan);
     tbody.appendChild(el('tr',{},
       sysCell,
@@ -1508,6 +1574,37 @@ function render(){
   statsEl.appendChild(revStat);
 
   frag.appendChild(el('div',{class:'header',style:{flexDirection:'column',gap:'4px'}},row1,statsEl));
+
+  // Lander Upgrades row
+  const upgRow=el('div',{class:'upgrades-row'});
+  upgRow.appendChild(el('span',{class:'upgrades-label'},'Lander Upgrades'));
+  [
+    ['tectonic','⚙ Tectonic Shield'],
+    ['weather','⚡ Lightning Shield'],
+    ['heat','🔥 Heat Shield'],
+  ].forEach(([key,lbl])=>{
+    const chkEl=el('input',{type:'checkbox'});
+    chkEl.checked=UPGRADES[key];
+    chkEl.addEventListener('change',e=>{
+      // Compute score delta before/after
+      const before=S.systems.map(s=>sysVisitScore(s)||0);
+      UPGRADES[key]=e.target.checked;
+      saveUpgrades();
+      const after=S.systems.map(s=>sysVisitScore(s)||0);
+      const improved=after.filter((v,i)=>v>before[i]).length;
+      const worsened=after.filter((v,i)=>v<before[i]).length;
+      const msg=UPGRADES[key]
+        ? `${lbl} ON${improved>0?' · '+improved+' system'+(improved>1?'s':'')+' improved':''}`
+        : `${lbl} OFF${worsened>0?' · '+worsened+' system'+(worsened>1?'s':'')+' updated':''}`;
+      toast(msg,2500);
+      render();
+    });
+    const wrap=el('label',{class:'upgrade-chk'+(UPGRADES[key]?' active':'')});
+    wrap.appendChild(chkEl);
+    wrap.appendChild(document.createTextNode(lbl));
+    upgRow.appendChild(wrap);
+  });
+  frag.appendChild(upgRow);
 
   // Tab bar
   const tabBar=el('div',{class:'tab-bar'});
@@ -1618,19 +1715,26 @@ function render(){
   });
   frag.appendChild(sb);
 
+  // Collapse all / Expand all row
+  const ceRow=el('div',{style:{display:'flex',gap:'8px',marginBottom:'8px'}});
+  const collapseAllBtn=el('button',{class:'btn-sm',id:'collapse-all'},'Collapse All');
+  collapseAllBtn.disabled=UI.openSys.size===0;
+  collapseAllBtn.addEventListener('click',()=>{UI.openSys.clear();renderList();});
+  const expandAllBtn=el('button',{class:'btn-sm',id:'expand-all'},'Expand All');
+  const filtered0=getFiltered();
+  expandAllBtn.disabled=filtered0.length===0||UI.openSys.size===filtered0.length;
+  expandAllBtn.addEventListener('click',()=>{getFiltered().forEach(s=>UI.openSys.add(s.id));renderList();});
+  ceRow.appendChild(collapseAllBtn);
+  ceRow.appendChild(expandAllBtn);
+  frag.appendChild(ceRow);
+
   // Add system form
   if(UI.addSys){
     frag.appendChild(sysForm(null,addSys,()=>{UI.addSys=false;render();}));
   }
 
-  // Systems container
-  const filtered=getFiltered();
+  // Systems container — renderList() populates this
   const listDiv=el('div',{id:'sys-list'});
-  if(filtered.length===0&&!UI.addSys){
-    listDiv.appendChild(el('div',{class:'empty'},S.systems.length===0?'No systems logged yet.\nTap + to add your first.':'No matches.'));
-  } else {
-    filtered.forEach(s=>listDiv.appendChild(sysCard(s)));
-  }
   frag.appendChild(listDiv);
 
   // Map toggle
@@ -1656,6 +1760,30 @@ function render(){
     const a=document.createElement('a');a.href=url;a.download='sc2-log.json';a.click();
     URL.revokeObjectURL(url);toast('Exported!');
   });
+
+  const csvBtn=el('button',{class:'btn-sm'},'Export CSV');
+  csvBtn.addEventListener('click',()=>{
+    const rows=[['Star System','Planet','Type','Revisit','Must Visit','Max Resource','Bio','Weather','Tectonics','Temperature','Fuel Dist','Visit Score','Notes']];
+    S.systems.forEach(sys=>{
+      const fuel=fuelDist(sys.x,sys.y);
+      const fd=typeof fuel==='number'?fuel:0;
+      const sortedP=[...sys.planets].sort((a,b)=>(a.order||999)-(b.order||999));
+      sortedP.forEach(p=>{
+        const vs=visitScore(p,fd);
+        rows.push([sys.name,p.order||'?',p.type,isRevisitable(p)?'Yes':'No',p.mustVisit?'Yes':'No',p.cargoValue,p.bioLifeforms?'Yes':'No',p.weather,p.tectonics,p.temperature,fuel,vs,p.notes||'']);
+        const sortedM=[...(p.moons||[])].sort((a,b)=>(a.order||999)-(b.order||999));
+        sortedM.forEach(m=>{
+          const mvs=visitScore(m,fd);
+          rows.push([sys.name,(p.order||'?')+'.'+(m.order||'?'),m.type,isRevisitable(m)?'Yes':'No',m.mustVisit?'Yes':'No',m.cargoValue,m.bioLifeforms?'Yes':'No',m.weather,m.tectonics,m.temperature,fuel,mvs,m.notes||'']);
+        });
+      });
+    });
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='sc2-planets.csv';a.click();
+    URL.revokeObjectURL(url);toast('CSV exported!');
+  });
   const impLbl=el('label',{class:'btn-sm',style:{cursor:'pointer',border:'.5px solid var(--bdr2)',borderRadius:'var(--rs)',padding:'7px 13px',display:'inline-block'}},'Import JSON');
   const impInp=el('input',{type:'file',accept:'.json',style:{display:'none'}});
   impInp.addEventListener('change',e=>{
@@ -1671,7 +1799,7 @@ function render(){
   impLbl.appendChild(impInp);
   const ghBtn=el('button',{class:'btn-sm'},'⇅ GitHub');
   ghBtn.addEventListener('click',()=>{UI.ghOpen=true;render();});
-  frag.appendChild(el('div',{class:'export-row'},expBtn,impLbl,ghBtn));
+  frag.appendChild(el('div',{class:'export-row'},expBtn,csvBtn,impLbl,ghBtn));
 
   // GitHub upload timestamp banner
   if(GH.lastPush){
@@ -1690,11 +1818,12 @@ function render(){
   // FAB
   if(!UI.addSys){
     const fab=el('button',{class:'fab','aria-label':'Add star system'},'+');
-    fab.addEventListener('click',()=>{UI.addSys=true;UI.sel=null;render();window.scrollTo({top:0,behavior:'smooth'});});
+    fab.addEventListener('click',()=>{UI.addSys=true;UI.openSys.clear();render();window.scrollTo({top:0,behavior:'smooth'});});
     frag.appendChild(fab);
   }
 
   app.appendChild(frag);
+  if(UI.tab==='systems') renderList();
   drawMap();
 }
 
@@ -1755,7 +1884,7 @@ function drawMap(){
 
   const dotR=mapView?5:4;
   S.systems.forEach(s=>{
-    const cx=px(s.x),cy=py(s.y),sel=s.id===UI.sel;
+    const cx=px(s.x),cy=py(s.y),sel=UI.openSys.has(s.id);
     if(cx<pad-dotR||cx>w-pad+dotR||cy<pad-dotR||cy>w-pad+dotR) return;
     ctx.beginPath();ctx.arc(cx,cy,sel?dotR+3:dotR,0,Math.PI*2);
     ctx.fillStyle=sel?'#EF9F27':'#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
@@ -1797,7 +1926,7 @@ function drawMap(){
       if(d<best){best=d;hit=s;}
     });
     if(hit){
-      UI.sel=UI.sel===hit.id?null:hit.id;
+      if(UI.openSys.has(hit.id)) UI.openSys.delete(hit.id); else UI.openSys.add(hit.id);
       UI.addPlanet=null;UI.addMoon=null;
       render();
       setTimeout(function(){
@@ -1811,6 +1940,7 @@ function drawMap(){
 // ── Boot ──────────────────────────────────────────────────────────
 load();
 loadGH();
+loadUpgrades();
 initTheme();
 render();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
