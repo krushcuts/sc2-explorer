@@ -264,7 +264,7 @@ canvas{display:block;width:100%;border-radius:var(--rs);border:.5px solid var(--
 
 // ── Constants ─────────────────────────────────────────────────────
 const SOL_X = 175.2, SOL_Y = 145.0;
-const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Dust World','Gas Giant','Green World','Halide World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Maroon World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Rainbow World','Radioactive World','Reducing','Redux World','Ruby World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
+const PLANET_TYPES = ['Unknown','Acid World','Airless Rock','Alkali World','Auric World','Azure World','Carbide World','Chlorine World','Chondrite World','Cimmerian World','Copper World','Crimson World','Cyanic World','Dust World','Emerald World','Gas Giant','Green World','Halide World','Hydrocarbon World','Icy','Infrared World','Iodine World','Lanthanide World','Magma World','Magnetic World','Maroon World','Metal World','Noble World','Oolite World','Opalescent World','Organic World','Pellucid World','Plutonic World','Primordial World','Purple World','Quasi-Degenerate World','Rainbow World','Radioactive World','Reducing','Redux World','Ruby World','Sapphire World','Selenic World','Shattered','Super Dense World','Telluric World','Treasure World','Ultramarine World','Ultraviolet World','Urea World','Vinylogous World','Water World','Xenolithic World','Yttric World'];
 const STAR_COLORS  = ['Yellow','Blue','Orange','Red','White','Brown Dwarf','Binary','Unknown'];
 const HAZ          = [0,1,2,3,4,5,6,7,8];
 const CARGO_OPTS   = [0,-1,1,2,3,4,5,6,8,25];
@@ -400,14 +400,14 @@ function sysVisitScore(sys){
   const mustVisitBonus=bodies.filter(b=>b.mustVisit).length*8;
   return Math.min(100,Math.round(best*0.60+aggScore*0.40)+mustVisitBonus);
 }
-const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
+const FACTIONS = ['—','Androsynth','Arilou','Chenjesu','Druuge','Humans','Ilwrath','Melnorme','Mmrnmhrm','Mycon','Orz','Pkunk','Slylandro','Spathi','Supox','Syreen','Thraddash','Umgah','Ur-Quan (Kohr-Ah)','Ur-Quan (Kzer-Za)','Utwig','VUX','Yehat','Zoq-Fot-Pik','Other'];
 const KEY = 'sc2-v2';
 const GH_KEY = 'sc2-gh';
 const UPG_KEY = 'sc2-upgrades';
 
 // ── State ─────────────────────────────────────────────────────────
 let S = {systems:[]};
-let UI = {openSys:new Set(),openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1};
+let UI = {openSys:new Set(),openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1,scrollToPlanet:null};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
 let UPGRADES = {tectonic:false,weather:false,heat:false};
 
@@ -533,15 +533,17 @@ function isRevisitable(b){
 
 // ── Swipe to dismiss forms ────────────────────────────────────────
 function swipeToDismiss(boxEl, onDismiss){
-  let startY=0, startX=0;
+  let startY=0, startX=0, scrollTop=0;
   boxEl.addEventListener('touchstart',e=>{
     startY=e.touches[0].clientY;
     startX=e.touches[0].clientX;
+    scrollTop=boxEl.scrollTop;
   },{passive:true});
   boxEl.addEventListener('touchend',e=>{
     const dy=e.changedTouches[0].clientY-startY;
     const dx=Math.abs(e.changedTouches[0].clientX-startX);
-    if(dy>60&&dx<40) onDismiss();
+    // Only dismiss if: swipe is downward, mostly vertical, box is scrolled to top, and swipe is large
+    if(dy>80&&dx<40&&scrollTop<=0) onDismiss();
   },{passive:true});
 }
 
@@ -859,8 +861,14 @@ function moonRow(moon,num,sysId,pid){
 
 // ── Planet block ──────────────────────────────────────────────────
 function planetBlock(planet,num,sys){
+  // Auto-open if navigating here from Notes tab
+  if(UI.scrollToPlanet===planet.id){
+    UI.openP[planet.id]=true;
+    UI.scrollToPlanet=null;
+  }
   const isOpen=!!UI.openP[planet.id];
   const block=el('div',{class:'planet-block'});
+  block.setAttribute('data-planet',planet.id);
 
   if(UI.editPlanet===planet.id){
     block.appendChild(bodyForm(planet,`Edit Planet ${num}`,
@@ -1260,13 +1268,13 @@ function renderNotesList(container,query){
     sortedP.forEach(p=>{
       if(p.notes&&p.notes.trim()){
         const lbl='Planet '+(p.order||'?')+' · '+p.type;
-        entries.push({sysName:sys.name,bodyLabel:lbl,note:p.notes.trim(),sysId:sys.id});
+        entries.push({sysName:sys.name,bodyLabel:lbl,note:p.notes.trim(),sysId:sys.id,planetId:p.id});
       }
       const sortedM=[...(p.moons||[])].sort((a,b)=>(a.order||999)-(b.order||999));
       sortedM.forEach(m=>{
         if(m.notes&&m.notes.trim()){
           const lbl='Moon '+(m.order||'?')+' of Planet '+(p.order||'?')+' · '+m.type;
-          entries.push({sysName:sys.name,bodyLabel:lbl,note:m.notes.trim(),sysId:sys.id});
+          entries.push({sysName:sys.name,bodyLabel:lbl,note:m.notes.trim(),sysId:sys.id,planetId:p.id});
         }
       });
     });
@@ -1290,7 +1298,18 @@ function renderNotesList(container,query){
     const sysSpan=el('span',{class:'src-sys'});
     sysSpan.textContent=e.sysName;
     sysSpan.style.cursor='pointer';
-    sysSpan.addEventListener('click',()=>{UI.openSys.add(e.sysId);UI.tab='systems';render();window.scrollTo({top:0,behavior:'smooth'});});
+    sysSpan.addEventListener('click',()=>{
+      UI.openSys.add(e.sysId);
+      UI.scrollToPlanet=e.planetId||null;
+      UI.tab='systems';
+      render();
+      setTimeout(()=>{
+        const target=e.planetId
+          ? document.querySelector('[data-planet="'+e.planetId+'"]')
+          : document.querySelector('[data-sys="'+e.sysId+'"]');
+        if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+      },80);
+    });
     src.appendChild(sysSpan);
     src.appendChild(el('span',{style:{color:'var(--text3)'}},'>'));
     src.appendChild(el('span',{class:'src-body'},e.bodyLabel));
