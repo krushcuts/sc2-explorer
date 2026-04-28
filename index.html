@@ -406,13 +406,13 @@ const GH_KEY = 'sc2-gh';
 const UPG_KEY = 'sc2-upgrades';
 
 // ── State ─────────────────────────────────────────────────────────
-let S = {systems:[]};
-let UI = {openSys:new Set(),openP:{},openM:{},addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1,scrollToPlanet:null};
+let S = {systems:[],portals:[]};
+let UI = {openSys:new Set(),openP:{},openM:{},openQS:new Set(),addSys:false,addPlanet:null,addMoon:null,editPlanet:null,editMoon:null,editSys:null,addPortal:false,editPortal:null,search:'',map:false,filterRevisit:false,filterBio:false,filterNotes:false,filterTreasure:false,filterHomeworld:false,sortBy:'name',ghOpen:false,tab:'systems',notesSearch:'',pvSort:'system',pvDir:1,scrollToPlanet:null};
 let GH = {token:'',owner:'',repo:'',file:'sc2-log.json',lastPush:'',lastPull:''};
 let UPGRADES = {tectonic:false,weather:false,heat:false};
 
 // ── Persistence ───────────────────────────────────────────────────
-function load(){try{const d=localStorage.getItem(KEY);if(d)S=JSON.parse(d)}catch(e){}}
+function load(){try{const d=localStorage.getItem(KEY);if(d){S=JSON.parse(d);if(!S.portals)S.portals=[];}}catch(e){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function loadGH(){try{const d=localStorage.getItem(GH_KEY);if(d)GH=Object.assign(GH,JSON.parse(d))}catch(e){}}
 function saveGH(){try{localStorage.setItem(GH_KEY,JSON.stringify(GH))}catch(e){}}
@@ -596,6 +596,23 @@ function delSys(id){
   confirmDialog('Delete this star system and all its planets and moons?', ()=>{
     S.systems=S.systems.filter(s=>s.id!==id);
     persist(); UI.openSys.clear(); render();
+  });
+}
+
+// ── Quasispace portal CRUD ────────────────────────────────────────
+function addPortal(d){
+  const p={id:uid(),name:d.name||'Unnamed Portal',qx:d.qx||'',qy:d.qy||'',dx:d.dx||'',dy:d.dy||'',notes:d.notes||'',addedAt:new Date().toISOString()};
+  S.portals.push(p); persist(); UI.addPortal=false; UI.openQS.add(p.id); render();
+}
+function updatePortal(id,d){
+  const i=S.portals.findIndex(p=>p.id===id);
+  if(i>=0) S.portals[i]={...S.portals[i],...d};
+  persist(); UI.editPortal=null; render();
+}
+function delPortal(id){
+  confirmDialog('Delete this Quasispace portal?',()=>{
+    S.portals=S.portals.filter(p=>p.id!==id);
+    persist(); render();
   });
 }
 function bodyDefaults(){return{id:uid(),type:PLANET_TYPES[0],order:0,weather:0,tectonics:0,temperature:'',cargoValue:0,bioLifeforms:false,homeworld:false,mustVisit:false,notes:'',moons:[]}}
@@ -1535,6 +1552,155 @@ function buildLastLoggedTab(){
   return frag;
 }
 
+// ── Portal Form ───────────────────────────────────────────────────
+function portalForm(existing, onSave, onCancel){
+  const d={name:'',qx:'',qy:'',dx:'',dy:'',notes:'',...existing};
+  const box=el('div',{class:'form-box'},el('div',{class:'form-title'},existing?'Edit portal':'Log Quasispace portal'));
+
+  const nameInp=mkInp('text',d.name,v=>d.name=v,{placeholder:'e.g. Portal Near Procyon'});
+  box.appendChild(field('Portal name',nameInp));
+
+  box.appendChild(el('div',{class:'section-sep'},'Quasispace coordinates'));
+  const qg=el('div',{class:'g3'});
+  qg.appendChild(el('div',{},el('label',{},'QS X'),mkInp('number',d.qx,v=>d.qx=v===''?'':parseFloat(v)||0,{placeholder:'e.g. 480',inputmode:'decimal'})));
+  qg.appendChild(el('div',{},el('label',{},'QS Y'),mkInp('number',d.qy,v=>d.qy=v===''?'':parseFloat(v)||0,{placeholder:'e.g. 220',inputmode:'decimal'})));
+  box.appendChild(qg);
+
+  box.appendChild(el('div',{class:'section-sep'},'Destination in normal space'));
+  const dg=el('div',{class:'g3'});
+  dg.appendChild(el('div',{},el('label',{},'Dest X'),mkInp('number',d.dx,v=>d.dx=v===''?'':parseFloat(v)||0,{placeholder:'e.g. 725',inputmode:'decimal'})));
+  dg.appendChild(el('div',{},el('label',{},'Dest Y'),mkInp('number',d.dy,v=>d.dy=v===''?'':parseFloat(v)||0,{placeholder:'e.g. 180',inputmode:'decimal'})));
+  box.appendChild(dg);
+
+  const notesTA=el('textarea',{rows:'2',placeholder:'Notes...'});
+  notesTA.value=d.notes;
+  notesTA.addEventListener('input',e=>d.notes=e.target.value);
+  box.appendChild(field('Notes',notesTA));
+
+  const saveBtn=el('button',{class:'btn-primary',type:'button'},existing?'Save changes':'Save');
+  saveBtn.addEventListener('click',()=>{if(!d.name.trim()){nameInp.focus();return;}onSave(d);});
+  const cancelBtn=el('button',{},'Cancel');
+  cancelBtn.addEventListener('click',onCancel);
+  box.appendChild(el('div',{class:'form-btns'},saveBtn,cancelBtn));
+  return box;
+}
+
+// ── Quasispace Tab ────────────────────────────────────────────────
+function buildQuasispaceTab(){
+  const frag=document.createDocumentFragment();
+
+  // Quasispace map
+  const cv=el('canvas',{id:'qsmap',style:{width:'100%',borderRadius:'var(--rs)',marginBottom:'10px',border:'.5px solid var(--bdr)',display:'block'}});
+  frag.appendChild(cv);
+  frag.appendChild(el('div',{class:'map-legend',style:{marginBottom:'12px'}},'Teal = QS portal position · Blue = normal-space destination'));
+
+  // Add portal form or button
+  if(UI.addPortal){
+    frag.appendChild(portalForm(null,addPortal,()=>{UI.addPortal=false;render();}));
+  }
+
+  // Portal cards
+  if(S.portals.length===0&&!UI.addPortal){
+    const es=el('div',{class:'empty-state'});
+    es.appendChild(el('div',{class:'empty-state-icon'},'🌀'));
+    es.appendChild(el('div',{class:'empty-state-title'},'No portals logged yet'));
+    es.appendChild(el('div',{class:'empty-state-sub'},'Tap + to log a Quasispace portal.'));
+    frag.appendChild(es);
+  }
+
+  S.portals.forEach(portal=>{
+    if(UI.editPortal===portal.id){
+      frag.appendChild(portalForm(portal,d=>updatePortal(portal.id,d),()=>{UI.editPortal=null;render();}));
+      return;
+    }
+    const isOpen=UI.openQS.has(portal.id);
+    const card=el('div',{class:'sys-card'+(isOpen?' open':'')});
+
+    const delBtn=el('button',{class:'btn-del'},'✕');
+    delBtn.addEventListener('click',e=>{e.stopPropagation();delPortal(portal.id);});
+
+    const hdr=el('div',{class:'sys-header'},
+      el('div',{style:{flex:'1'}},
+        el('div',{class:'sys-name'},portal.name),
+        el('div',{class:'sys-meta'},`QS (${portal.qx}, ${portal.qy})${portal.dx!==''?' · Dest ('+portal.dx+', '+portal.dy+')':''}`)
+      ),
+      el('span',{class:'chevron'},isOpen?'▲':'▼'),
+      delBtn
+    );
+    hdr.addEventListener('click',()=>{
+      if(isOpen) UI.openQS.delete(portal.id); else UI.openQS.add(portal.id);
+      render();
+    });
+    card.appendChild(hdr);
+
+    if(isOpen){
+      const body=el('div',{class:'sys-body'});
+      const grid=el('div',{class:'detail-grid'});
+      [
+        ['QS X', portal.qx],
+        ['QS Y', portal.qy],
+        ['Dest X', portal.dx!==''?portal.dx:'—'],
+        ['Dest Y', portal.dy!==''?portal.dy:'—'],
+      ].forEach(([l,v])=>{
+        grid.appendChild(el('div',{class:'dg-label'},l));
+        grid.appendChild(el('div',{class:'dg-val'},String(v)));
+      });
+      body.appendChild(grid);
+      if(portal.notes) body.appendChild(el('div',{style:{fontSize:'13px',color:'var(--text2)',fontStyle:'italic',margin:'8px 0'}},portal.notes));
+      body.appendChild(el('div',{class:'logged-date'},'Logged '+fmtDate(portal.addedAt)));
+      const editBtn=el('button',{class:'btn-sm',style:{marginTop:'6px'}},'Edit portal');
+      editBtn.addEventListener('click',()=>{UI.editPortal=portal.id;render();});
+      body.appendChild(editBtn);
+      card.appendChild(body);
+    }
+    frag.appendChild(card);
+  });
+
+  // FAB
+  const fab=el('button',{class:'fab',id:'qs-fab'},'+');
+  fab.addEventListener('click',()=>{UI.addPortal=true;render();window.scrollTo({top:0,behavior:'smooth'});});
+  frag.appendChild(fab);
+
+  return frag;
+}
+
+function drawQSMap(){
+  const cv=document.getElementById('qsmap');
+  if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.offsetWidth||320;
+  cv.width=w*dpr; cv.height=w*dpr; cv.style.height=w+'px';
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad=20, inner=w-pad*2;
+  const dark=!document.documentElement.classList.contains('light');
+  const gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
+  const lc=dark?'#636366':'#aaa';
+
+  // Grid
+  ctx.strokeStyle=gc; ctx.lineWidth=.5;
+  [250,500,750].forEach(v=>{
+    const p=pad+(v/1000)*inner;
+    ctx.beginPath();ctx.moveTo(p,pad);ctx.lineTo(p,w-pad);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad,p);ctx.lineTo(w-pad,p);ctx.stroke();
+  });
+
+  ctx.fillStyle=lc; ctx.font='9px monospace';
+  ctx.fillText('QS 0,0',pad,w-4);
+  ctx.fillText('1000',w-32,w-4);
+
+  const px=v=>pad+(v/1000)*inner;
+  const py=v=>pad+((1000-v)/1000)*inner;
+
+  S.portals.forEach(portal=>{
+    if(portal.qx===''||portal.qy==='') return;
+    const cx=px(+portal.qx), cy=py(+portal.qy);
+    ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);
+    ctx.fillStyle='#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle=lc;ctx.font='9px monospace';ctx.fillText(portal.name,cx+8,cy+4);
+  });
+}
+
 // ── Full render ───────────────────────────────────────────────────
 function render(){
   const app=document.getElementById('app');
@@ -1611,6 +1777,8 @@ function render(){
   const tabBar=el('div',{class:'tab-bar'});
   const sysTab=el('button',{class:'tab'+(UI.tab==='systems'?' on':'')},'Systems');
   sysTab.addEventListener('click',()=>{UI.tab='systems';render();});
+  const qsTab=el('button',{class:'tab'+(UI.tab==='quasispace'?' on':'')},'Quasispace');
+  qsTab.addEventListener('click',()=>{UI.tab='quasispace';render();});
   const notesTab=el('button',{class:'tab'+(UI.tab==='notes'?' on':'')},'Notes');
   notesTab.addEventListener('click',()=>{UI.tab='notes';render();});
 
@@ -1641,11 +1809,18 @@ function render(){
   refDropWrap.appendChild(refMenu);
 
   tabBar.appendChild(sysTab);
+  tabBar.appendChild(qsTab);
   tabBar.appendChild(notesTab);
   tabBar.appendChild(refDropWrap);
   frag.appendChild(tabBar);
 
   // ── Tab content ──
+  if(UI.tab==='quasispace'){
+    frag.appendChild(buildQuasispaceTab());
+    app.appendChild(frag);
+    setTimeout(()=>drawQSMap(),60);
+    return;
+  }
   if(UI.tab==='notes'){
     frag.appendChild(buildNotesTab());
     app.appendChild(frag);
@@ -1891,6 +2066,25 @@ function drawMap(){
     ctx.fillStyle=sel?'#EF9F27':'#5DCAA5';ctx.globalAlpha=.9;ctx.fill();ctx.globalAlpha=1;
     if(sel){ctx.beginPath();ctx.arc(cx,cy,dotR+8,0,Math.PI*2);ctx.strokeStyle='#EF9F27';ctx.lineWidth=1;ctx.globalAlpha=.5;ctx.stroke();ctx.globalAlpha=1;}
     ctx.fillStyle=lc;ctx.font=mapView?'10px monospace':'9px monospace';ctx.fillText(s.name,cx+dotR+3,cy+4);
+  });
+
+  // Quasispace portal destinations — blue dots in normal space
+  S.portals.forEach(p=>{
+    if(p.dx===''||p.dy==='') return;
+    const cx=px(+p.dx), cy=py(+p.dy);
+    if(cx<pad-6||cx>w-pad+6||cy<pad-6||cy>w-pad+6) return;
+    // Diamond shape to distinguish from system dots
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(Math.PI/4);
+    ctx.fillStyle='#4A9EFF';
+    ctx.globalAlpha=.85;
+    ctx.fillRect(-4,-4,8,8);
+    ctx.globalAlpha=1;
+    ctx.restore();
+    ctx.fillStyle='#4A9EFF';
+    ctx.font=mapView?'10px monospace':'9px monospace';
+    ctx.fillText('⊕ '+p.name,cx+8,cy+4);
   });
 
   // Corner labels
