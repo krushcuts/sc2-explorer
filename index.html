@@ -74,6 +74,8 @@ button:active{background:var(--bg3);transform:scale(.97)}
 .fuel-mid{color:var(--warn-tx)}
 .fuel-far{color:var(--bad-tx)}
 .btn-mined-on{background:var(--ok-bg);color:var(--ok-tx);border-color:var(--ok-tx)}
+.btn-danger-soft{color:var(--bad-tx);border-color:var(--bad-bdr)}
+.btn-danger-soft:active{background:var(--bad-bg)}
 .empty-state{padding:48px 24px;text-align:center;color:var(--text3)}
 .empty-state-icon{font-size:36px;margin-bottom:12px}
 .empty-state-title{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:8px}
@@ -1975,7 +1977,16 @@ function render(){
   impLbl.appendChild(impInp);
   const ghBtn=el('button',{class:'btn-sm'},'⇅ GitHub');
   ghBtn.addEventListener('click',()=>{UI.ghOpen=true;render();});
-  frag.appendChild(el('div',{class:'export-row'},expBtn,csvBtn,impLbl,ghBtn));
+  const resetMinedBtn=el('button',{class:'btn-sm btn-danger-soft'},'Reset All Mined');
+  resetMinedBtn.addEventListener('click',()=>{
+    const count=S.systems.filter(s=>s.mined).length;
+    if(count===0){toast('No systems are marked as mined.');return;}
+    confirmDialog(`Clear the Mined flag on all ${count} system${count>1?'s':''}? (Use when starting a new game)`,()=>{
+      S.systems.forEach(s=>s.mined=false);
+      persist();render();toast('All Mined flags cleared.');
+    });
+  });
+  frag.appendChild(el('div',{class:'export-row'},expBtn,csvBtn,impLbl,ghBtn,resetMinedBtn));
 
   // GitHub upload timestamp banner
   if(GH.lastPush){
